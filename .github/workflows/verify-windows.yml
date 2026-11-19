@@ -1,5 +1,7 @@
 name: Vérification Windows 2.3.1
 on: push
+permissions:
+  contents: write
 jobs:
   update:
     runs-on: windows-latest
@@ -15,3 +17,7 @@ jobs:
       - run: npm install --no-save playwright
       - run: npx playwright install chromium
       - run: node verification/test.cjs verification/baseline
+      - name: Joindre les fichiers au brouillon GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v2.3.1 verification/inkforge-update.zip verification/inkforge-update.json --clobber
