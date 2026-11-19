@@ -1,0 +1,6 @@
+{
+  "version": "2.3.0",
+  "app": "INKFORGE Studio",
+  "channel": "dev",
+  "reset_projects_on_upgrade": true
+}
