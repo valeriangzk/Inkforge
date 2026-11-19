@@ -1,0 +1,15 @@
+INKFORGE Studio 2.3.1 pour Windows
+
+Démarrage
+1. Python 3 doit être installé.
+2. Double-cliquez sur LANCER_INKFORGE.cmd.
+
+Mises à jour
+1. Au démarrage, INKFORGE consulte les versions publiées sur GitHub.
+2. Si une version plus récente est proposée, cliquez sur Installer la mise à jour.
+3. Après le message de confirmation, fermez la fenêtre noire et relancez LANCER_INKFORGE.cmd.
+
+Pour retrouver vos projets, utilisez le même navigateur et le même profil.
+Les clés API gardées en mémoire doivent être ressaisies après le redémarrage.
+
+Dépôt des mises à jour : https://github.com/valeriangzk/Inkforge/releases
