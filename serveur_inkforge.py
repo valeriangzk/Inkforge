@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 import json, webbrowser, threading, time, socket, zipfile, io, os, shutil, tempfile, re, hashlib, base64, mimetypes
+from urllib.request import build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
 
 HOST = "127.0.0.1"
@@ -196,6 +197,49 @@ def describe_reference(entity,which):
             refs.append(image)
     return which+' : '+' ; '.join(text),refs
 
+def trusted_image_url(url):
+    parsed = urlparse(url)
+    return (parsed.scheme == 'https' and parsed.hostname in
+            ('apihub.agnes-ai.com', 'platform-outputs.agnes-ai.space')
+            and parsed.username is None and parsed.port in (None, 443))
+
+
+class ImageRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not trusted_image_url(newurl):
+            raise ClientFailure('Redirection de l’image vers un domaine inconnu.', 502)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def local_image(record):
+    value = record.get('b64_json') or record.get('url')
+    if not isinstance(value, str) or not value:
+        raise ClientFailure('Agnes AI a retourné une réponse sans image.', 502)
+    try:
+        if value.startswith('https://'):
+            if not trusted_image_url(value):
+                raise ClientFailure('Adresse de téléchargement Agnes AI inconnue.', 502)
+            with build_opener(ImageRedirect()).open(value, timeout=30) as response:
+                data = response.read(9_000_001)
+        else:
+            if value.startswith('data:'):
+                value = value.split(',', 1)[-1]
+            data = base64.b64decode(''.join(value.split()), validate=True)
+    except (ValueError, OSError) as exc:
+        raise ClientFailure('Image Agnes AI illisible ou lien expiré.', 502) from exc
+    if len(data) > 9_000_000:
+        raise ClientFailure('Image Agnes AI trop volumineuse.', 502)
+    if data.startswith(bytes.fromhex('89504e470d0a1a0a')):
+        kind = 'png'
+    elif data.startswith(bytes.fromhex('ffd8ff')):
+        kind = 'jpeg'
+    elif data.startswith(b'RIFF') and data[8:12] == b'WEBP':
+        kind = 'webp'
+    else:
+        raise ClientFailure('Format illisible : PNG, JPEG ou WebP attendu.', 502)
+    return 'data:image/' + kind + ';base64,' + base64.b64encode(data).decode('ascii')
+
+
 def send_generate(payload,key):
     model=payload.get('model'); prompt=payload.get('prompt')
     if not isinstance(model,str) or not re.fullmatch(r'[A-Za-z0-9._:-]{3,120}',model) or 'image' not in model.lower():
@@ -226,13 +270,7 @@ def send_generate(payload,key):
         raise ClientFailure('Réponse de génération sans image. Vérifie le modèle.',502)
     record=result['data'][0]
     if not isinstance(record,dict):raise ClientFailure('Format d’image renvoyé non reconnu.',502)
-    image=record.get('b64_json')
-    if isinstance(image,str) and len(image)<12_000_000:
-        image='data:image/png;base64,'+image
-    else:
-        image=record.get('url')
-        if not isinstance(image,str) or not image.startswith('https://') or len(image)>2000:
-            raise ClientFailure('Le service n’a retourné aucune image compatible.',502)
+    image=local_image(record)
     return {'image':image,'references_used':len(refs[:5]),'model':model}
 
 class Handler(BaseHTTPRequestHandler):
