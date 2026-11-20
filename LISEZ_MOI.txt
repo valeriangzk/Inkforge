@@ -1,4 +1,4 @@
-INKFORGE Studio 2.7.3 pour Windows
+INKFORGE Studio 2.7.4 pour Windows
 
 Lancer le studio
 Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.
@@ -54,6 +54,13 @@ Clique sur « Installer la mise à jour » dans le studio. INKFORGE vérifie une
 copie de la version et de ses données avant de remplacer l’ancienne sauvegarde.
 Ferme ensuite la fenêtre noire et relance ton lanceur habituel. Chaque nouvelle
 version démarre avec un espace de travail vide. TripoSR reste installé.
+
+Réparer un démarrage bloqué en 2.7.1 à 2.7.4
+Ferme les fenêtres noires INKFORGE et télécharge MISE_A_JOUR_INKFORGE.cmd
+depuis la publication 2.7.4. Lance cet assistant, choisis le fichier
+LANCER_INKFORGE.cmd du dossier à réparer et clique sur « Réparer INKFORGE
+et garder mes données ». Après le message de réussite, relance ce même lanceur.
+Cette réparation conserve le travail actuel et l’archive de secours existante.
 
 Restaurer
 Ouvre « Mises à jour » puis « Restaurer la version … ». La restauration remplace

@@ -81,7 +81,36 @@ def auto_install(expected_version=None):
         raise ValueError('Échec du contrôle SHA-256')
     return install_zip(payload, expected_version=remote['version'])
 
-def install_zip(data, expected_version=None, legacy_browser=None):
+def check_staged_start(folder, version):
+    html=(folder/'INKFORGE.html').read_bytes()
+    marker=b'<meta name="inkforge-version" content="'+version.encode('ascii')+b'"'
+    if marker not in html:
+        raise ValueError('Installation annulée : la page et le paquet annoncent des versions différentes.')
+    # Exercise the candidate's own HTTP handler before touching the live directory.
+    probe="""import json, runpy, sys, threading
+from urllib.request import urlopen, Request
+from pathlib import Path
+app=runpy.run_path(str(Path('serveur_inkforge.py').resolve()))
+with app['ThreadingHTTPServer'](('127.0.0.1',0),app['Handler']) as server:
+    port=server.server_port
+    app['Handler'].do_POST.__globals__['PORT']=port
+    threading.Thread(target=server.serve_forever,daemon=True).start()
+    origin='http://127.0.0.1:'+str(port)
+    with urlopen(origin+'/',timeout=4) as response:
+        assert response.status==200 and b'workLoading' in response.read()
+    assert json.load(urlopen(origin+'/work/status',timeout=4))['version']==sys.argv[1]
+    request=Request(origin+'/work/open',b'{"legacy":{}}',
+        headers={'Content-Type':'application/json','Origin':origin,'X-Inkforge-Version':sys.argv[1]})
+    assert isinstance(json.load(urlopen(request,timeout=4))['state']['projects'],dict)
+"""
+    try:
+        subprocess.run([sys.executable,'-I','-B','-c',probe,version],cwd=folder,
+                       stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=20,check=True)
+    except (OSError,subprocess.SubprocessError) as exc:
+        raise ValueError('Installation annulée : le nouveau relais n’a pas ouvert son interface et son espace de travail pendant le contrôle.') from exc
+
+
+def install_zip(data, expected_version=None, legacy_browser=None, repair=False):
     with WORK_LOCK, zipfile.ZipFile(io.BytesIO(data)) as archive:
         reject_busy()
         if LEGACY_BACKUP.exists() and legacy_browser is None:
@@ -94,7 +123,7 @@ def install_zip(data, expected_version=None, legacy_browser=None):
         target = json.loads(archive.read(members['version.json'])).get('version','')
         if not isinstance(target,str) or not re.fullmatch(r'\d+\.\d+\.\d+',target) or expected_version and target!=expected_version:
             raise ValueError('Version du ZIP invalide.')
-        if tuple(map(int,target.split('.'))) <= tuple(map(int,BOOT_VERSION.split('.'))):
+        if tuple(map(int,target.split('.'))) < tuple(map(int,BOOT_VERSION.split('.'))) or (target==BOOT_VERSION and not repair):
             raise ValueError('Choisissez une version plus récente.')
         if b'inkforge-installed-version' not in archive.read(members[PROGRAM[0]]) or b'/validate-keys' not in archive.read(members[PROGRAM[1]]):
             raise ValueError('ZIP incompatible avec le studio.')
@@ -106,6 +135,13 @@ def install_zip(data, expected_version=None, legacy_browser=None):
             for name in names:
                 write_atomic(new/name,archive.read(members[name]))
             compile((new/'serveur_inkforge.py').read_bytes(),'serveur_inkforge.py','exec')
+            check_staged_start(new,target)
+            if repair:
+                # Compatible patch only. Leave the current workspace and rescue in place.
+                if BOOT_VERSION not in ('2.7.1','2.7.2','2.7.3',target) or legacy_browser is not None:
+                    raise ValueError('Réparation incompatible avec cette version.')
+                commit_files(stage,names,False)
+                return target
             create_rescue(stage/'secours.zip', BASE, WORK, legacy_browser, LOCAL_3D/'models' if legacy_browser is not None else None)
             names.extend([WORK.name,LEGACY_BROWSER.name])
             if legacy_browser is not None:
@@ -930,6 +966,11 @@ class Handler(BaseHTTPRequestHandler):
         # Do not log API keys or request bodies.
         return
 
+    def update_finished(self, version):
+        self.send_data(200,{'version':version,'installed':True})
+        # Release the Windows port after delivering the installation receipt.
+        threading.Thread(target=self.server.shutdown,daemon=True).start()
+
     def send_data(self, status, data, kind="application/json; charset=utf-8"):
         payload = data if isinstance(data, bytes) else json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -960,6 +1001,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_data(200,{'version':BOOT_VERSION,'previous':old,'rescue':backup_version()})
         if self.path in ("/", "/INKFORGE.html"):
             version = version_data()['version']
+            if version != BOOT_VERSION:
+                return self.send_data(409,('INKFORGE '+version+' est installé. Le relais '+str(BOOT_VERSION)+' doit être fermé. Relance LANCER_INKFORGE.cmd dans le dossier mis à jour.').encode(),'text/plain; charset=utf-8')
             html = re.sub(rb'(<meta name="inkforge-version" content=")[^"]*', lambda match: match[1]+version.encode('ascii'), HTML.read_bytes(), count=1)
             self.send_data(200, html, "text/html; charset=utf-8")
         elif self.path == "/updates/status":
@@ -1094,7 +1137,7 @@ class Handler(BaseHTTPRequestHandler):
                 if expected is not None and (not isinstance(expected, str) or not re.fullmatch(r'\d+\.\d+\.\d+', expected)):
                     raise ValueError('Version demandée invalide')
                 version=auto_install(expected)
-                return self.send_data(200,{'version':version,'installed':True})
+                return self.update_finished(version)
             except Exception as exc:
                 return self.send_data(400,{'error':str(exc)[:180]})
         if self.path == '/updates/install':
@@ -1107,7 +1150,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not 0 < size <= 8_000_000:
                     raise ValueError('Fichier trop volumineux')
                 version=install_zip(self.rfile.read(size))
-                return self.send_data(200, {'version':version, 'installed':True})
+                return self.update_finished(version)
             except (ValueError,zipfile.BadZipFile,KeyError,OSError) as exc:
                 return self.send_data(400, {'error':str(exc)})
         if self.path != "/validate-keys":
@@ -1152,21 +1195,22 @@ def maintenance_server(package=None):
     # The first protected update must read 2.4.2 browser data at its original origin.
     # The same standalone page can finish restoring that data if the studio cannot open.
     restore = package is None
-    label = 'Restaurer la version de secours' if restore else 'Installer la mise à jour'
+    repair=not restore and BOOT_VERSION in ('2.7.1','2.7.2','2.7.3','2.7.4')
+    label = 'Réparer INKFORGE et garder mes données' if repair else 'Restaurer la version de secours' if restore else 'Installer la mise à jour'
     page_html = """<!doctype html><html lang="fr"><meta charset="utf-8"><title>INKFORGE Studio</title>
 <style>body{background:#121824;color:#f7f7fb;font:18px system-ui;max-width:40em;margin:12vh auto;padding:20px}button{font:inherit;background:#aba6ff;padding:12px;border:0;border-radius:8px}p{line-height:1.5}</style>
 <h1>INKFORGE Studio</h1><p id="description"></p><button></button><p role="status" id="status"></p>
 <script>
-const version=VERSION,restore=RESTORE,button=document.querySelector('button'),statusText=document.querySelector('#status');
-document.querySelector('#description').textContent=restore?'La restauration remplacera le travail de la version actuelle par sa copie de secours.':'Utilise le navigateur et le profil où tu as créé tes personnages. Le studio va vérifier la copie de tes projets avant l’installation.';
+const version=VERSION,repair=REPAIR,restore=RESTORE,button=document.querySelector('button'),statusText=document.querySelector('#status');
+document.querySelector('#description').textContent=repair?'La réparation remplace les fichiers du programme. Tes projets et ta sauvegarde de secours restent dans ce dossier.':restore?'La restauration remplacera le travail de la version actuelle par sa copie de secours.':'Utilise le navigateur et le profil où tu as créé tes personnages. Le studio va vérifier la copie de tes projets avant l’installation.';
 button.textContent=LABEL;
 const keyList=()=>Object.fromEntries(Object.entries(localStorage).filter(([k])=>k.startsWith('inkforge-experiments/'+version+'/')||k==='inkforge-tooltips-enabled'));
-if(!restore){const projects=JSON.parse(localStorage.getItem('inkforge-experiments/'+version+'/projects')||'{}');const names=Object.values(projects).flatMap(p=>(p.characters||[]).map(c=>c.name)).slice(0,8);
+if(!restore&&!repair){const projects=JSON.parse(localStorage.getItem('inkforge-experiments/'+version+'/projects')||'{}');const names=Object.values(projects).flatMap(p=>(p.characters||[]).map(c=>c.name)).slice(0,8);
  document.querySelector('#description').append(' Projets enregistrés dans ce profil : '+Object.keys(projects).length+'.'+(names.length?' Personnages : '+names.join(', ')+'.':''));}
 async function call(path,data){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const v=await r.json();if(!r.ok)throw Error(v.error);return v}
 button.onclick=async()=>{button.disabled=true;try{
- const legacy=keyList();
- if(!restore && !Object.hasOwn(legacy,'inkforge-experiments/'+version+'/projects') && !confirm('Aucun projet 2.4.2 enregistré dans ce profil de navigateur. Continuer avec une sauvegarde vide ?')){button.disabled=false;return}
+ const legacy=repair?{}:keyList();
+ if(!restore && !repair && !Object.hasOwn(legacy,'inkforge-experiments/'+version+'/projects') && !confirm('Aucun projet 2.4.2 enregistré dans ce profil de navigateur. Continuer avec une sauvegarde vide ?')){button.disabled=false;return}
  const model=sessionStorage.getItem('inkforge-ai-model');if(model!==null)legacy['inkforge-ai-model']=model;
  const r=await call('/maintenance',{legacy});
  if(r.browser){for(const [k,v] of Object.entries(r.browser)){const dest=k==='inkforge-ai-model'?sessionStorage:localStorage;dest.setItem(k,v);if(dest.getItem(k)!==v)throw Error('Restauration du navigateur interrompue. Relance RESTAURER_INKFORGE.cmd.')}}
@@ -1174,7 +1218,7 @@ button.onclick=async()=>{button.disabled=true;try{
  await call('/maintenance/terminee',{});
  statusText.textContent='Version '+r.version+' prête. Ferme cet onglet et relance LANCER_INKFORGE.cmd dans ton dossier habituel.';
 }catch(e){statusText.textContent=e.message;button.disabled=false}};
-</script></html>""".replace('RESTORE',json.dumps(restore)).replace('LABEL',json.dumps(label))
+</script></html>""".replace('REPAIR',json.dumps(repair)).replace('RESTORE',json.dumps(restore)).replace('LABEL',json.dumps(label))
     class Maintenance(Handler):
         def do_GET(self):
             if self.path=='/':
@@ -1184,7 +1228,7 @@ button.onclick=async()=>{button.disabled=true;try{
             try:
                 require_same_origin(self.headers)
                 if self.path=='/maintenance/terminee':
-                    LEGACY_BROWSER.unlink(missing_ok=True)
+                    if not repair:LEGACY_BROWSER.unlink(missing_ok=True)
                     self.send_data(200,{'ok':True})
                     threading.Thread(target=self.server.shutdown,daemon=True).start()
                     return
@@ -1199,6 +1243,8 @@ button.onclick=async()=>{button.disabled=true;try{
                             result=restore_backup(offline=True)
                         if LEGACY_BROWSER.exists():
                             result['browser']=json.loads(LEGACY_BROWSER.read_bytes())
+                    elif repair:
+                        result={'version':install_zip(package,repair=True)}
                     else:
                         if BOOT_VERSION!='2.4.2':
                             raise ValueError('Cet assistant est réservé au premier passage depuis la version 2.4.2.')
@@ -1215,10 +1261,18 @@ button.onclick=async()=>{button.disabled=true;try{
     serve(Maintenance)
 
 
+class StudioServer(ThreadingHTTPServer):
+    def server_bind(self):
+        if os.name=='nt':
+            self.allow_reuse_address=False
+            self.socket.setsockopt(socket.SOL_SOCKET,socket.SO_EXCLUSIVEADDRUSE,1)
+        super().server_bind()
+
+
 def serve(handler):
     global BOOT_VERSION
     try:
-        server = ThreadingHTTPServer((HOST, PORT), handler)
+        server = StudioServer((HOST, PORT), handler)
     except OSError:
         print("Le port 8765 est occupé. Ferme la fenêtre noire INKFORGE et relance.")
         raise SystemExit(1)
@@ -1229,6 +1283,7 @@ def serve(handler):
             if not BOOT_VERSION:
                 raise SystemExit('Lance RESTAURER_INKFORGE.cmd pour restaurer la version de secours.')
             recovery_tools()
+        print(f"INKFORGE {BOOT_VERSION} — dossier {BASE}")
         print(f"INKFORGE est disponible sur http://{HOST}:{PORT}")
         print("Laisse cette fenêtre ouverte pendant l’utilisation.")
         threading.Timer(1, lambda: webbrowser.open(f"http://{HOST}:{PORT}/")).start()

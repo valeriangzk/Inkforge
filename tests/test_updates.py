@@ -28,7 +28,7 @@ def package(version):
     output=io.BytesIO()
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as archive:
         for name in FILES:
-            archive.writestr(name,json.dumps({'version':version}) if name=='version.json' else (ROOT/name).read_bytes())
+            archive.writestr(name,json.dumps({'version':version}) if name=='version.json' else (ROOT/name).read_bytes().replace(b'2.7.4',version.encode()) if name=='INKFORGE.html' else (ROOT/name).read_bytes())
     return output.getvalue()
 
 
@@ -60,6 +60,21 @@ class Updates(unittest.TestCase):
         self.assertEqual(self.app.read_workspace()['projects'],{})
         self.assertFalse((self.app.WORK/'models').exists())
         self.assertFalse((self.app.WORK/'media').exists())
+
+    def test_preflight_rejects_broken_start_before_replacing_files(self):
+        self.populate('initial');self.upgrade('2.8.0')
+        work=self.populate('actif');spare=self.app.RESCUE.read_bytes()
+        out=io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(package('2.9.0'))) as src, zipfile.ZipFile(out,'w') as dest:
+            for name in src.namelist():
+                code=src.read(name)
+                if name=='serveur_inkforge.py':code=b'raise RuntimeError("startup fixture")\n'+code
+                dest.writestr(name,code)
+        with self.assertRaisesRegex(ValueError,'nouveau relais'):
+            self.app.install_zip(out.getvalue())
+        self.assertEqual(self.app.version_data()['version'],'2.8.0')
+        self.assertEqual((self.app.WORK/'state.json').read_bytes(),work)
+        self.assertEqual(self.app.RESCUE.read_bytes(),spare)
 
     def test_rotation_restore_and_runtime(self):
         self.app.LOCAL_3D.mkdir()
@@ -151,7 +166,7 @@ a.install_zip(Path('incoming.zip').read_bytes())"""
                 with self.assertRaises(a.ClientFailure):a.auto_install('2.8.0')
             with self.assertRaises(ValueError):a.auto_install('2.9.0')
             self.assertEqual(a.auto_install('2.8.0'),'2.8.0')
-        self.assertEqual(a.backup_version(),'2.7.3')
+        self.assertEqual(a.backup_version(),'2.7.4')
 
 
 if __name__=='__main__':
