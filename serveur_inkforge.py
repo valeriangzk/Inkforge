@@ -91,17 +91,23 @@ def check_staged_start(folder, version):
 from urllib.request import urlopen, Request
 from pathlib import Path
 app=runpy.run_path(str(Path('serveur_inkforge.py').resolve()))
-with app['ThreadingHTTPServer'](('127.0.0.1',0),app['Handler']) as server:
+from http.server import HTTPServer
+with HTTPServer(('127.0.0.1',0),app['Handler']) as server:
     port=server.server_port
     app['Handler'].do_POST.__globals__['PORT']=port
-    threading.Thread(target=server.serve_forever,daemon=True).start()
+    worker=threading.Thread(target=server.serve_forever,args=(0.05,))
+    worker.start()
     origin='http://127.0.0.1:'+str(port)
-    with urlopen(origin+'/',timeout=4) as response:
-        assert response.status==200 and b'workLoading' in response.read()
-    assert json.load(urlopen(origin+'/work/status',timeout=4))['version']==sys.argv[1]
-    request=Request(origin+'/work/open',b'{"legacy":{}}',
-        headers={'Content-Type':'application/json','Origin':origin,'X-Inkforge-Version':sys.argv[1]})
-    assert isinstance(json.load(urlopen(request,timeout=4))['state']['projects'],dict)
+    try:
+        with urlopen(origin+'/',timeout=4) as response:
+            assert response.status==200 and b'workLoading' in response.read()
+        assert json.load(urlopen(origin+'/work/status',timeout=4))['version']==sys.argv[1]
+        request=Request(origin+'/work/open',b'{"legacy":{}}',
+            headers={'Content-Type':'application/json','Origin':origin,'X-Inkforge-Version':sys.argv[1]})
+        assert isinstance(json.load(urlopen(request,timeout=4))['state']['projects'],dict)
+    finally:
+        server.shutdown()
+        worker.join()
 """
     try:
         subprocess.run([sys.executable,'-I','-B','-c',probe,version],cwd=folder,
