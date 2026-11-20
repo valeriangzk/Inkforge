@@ -51,7 +51,7 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('5 '));
   await p.locator('#memorySave').click();await saved(p);await key(p);
   await p.route('**/ai/result',r=>r.abort('connectionreset'),{times:1});
-  await p.getByRole('button',{name:'Générer la référence',exact:true}).click();await p.waitForFunction(()=>!aiBusy);
+  await p.getByRole('button',{name:'Générer · Face',exact:true}).click();await p.waitForFunction(()=>!aiBusy);
   assert.equal(await p.locator('#aiDialogTitle').textContent(),'Référence de Sujet de vérification');
   assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth===960));
   await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
@@ -100,6 +100,32 @@ async function generate(p,prompt,accept=true){
   assert.equal(calls.length,5);assert.equal(calls[0].refs,5);assert.equal(calls[1].refs,0);
   assert.ok(calls[2].prompt.includes('Façade en briques')&&calls[2].prompt.includes('cheveux courts'));
   assert.ok(calls.every(c=>c.size<4_000_000));
+  await key(p);await p.locator('[data-tab=characters]').click();
+  const face=await p.evaluate(()=>project.characters[0].views.front);
+  for(const label of ['Profil gauche','Dos']){
+   await p.getByRole('button',{name:'Générer · '+label,exact:true}).click();
+   await p.getByRole('button',{name:'Valider cette vue'}).click();
+   await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
+  }
+  const views=await p.evaluate(()=>({...project.characters[0].views}));
+  assert.equal(views.front,face);assert.ok(views.side&&views.back);
+  await p.getByRole('button',{name:'Régénérer · Profil gauche'}).click();
+  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
+  assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
+  await p.locator('[data-tab=studio3d]').click();
+  await p.locator('#studioCharacter').selectOption({label:'Sujet de vérification'});
+  assert.equal(await p.locator('#studioSources img').count(),3);
+  await p.locator('#studioBuild').click();
+  await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
+  await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
+  assert.ok(await p.locator('#studioBuild').isDisabled());
+  await p.locator('#placeReference').click();await p.getByRole('button',{name:'Valider cette vue'}).click();
+  await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
+  assert.ok(await p.locator('#studioBuild').isEnabled());
+  await p.reload();await p.waitForFunction(()=>workspaceReady);
+  assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
+  assert.ok(await p.evaluate(()=>project.places[0].img));
+  console.log('PASS trois vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
   console.log('PASS génération sans sélection et avec bibliothèques, deux échecs, insertion, export/import, historique, fermeture et réouverture');
  } finally{await browser?.close();if(server)await stop();fs.rmSync(tmp,{recursive:true,force:true,maxRetries:6,retryDelay:150})}
 })().catch(e=>{console.error(e);process.exitCode=1});

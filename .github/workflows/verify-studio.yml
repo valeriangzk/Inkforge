@@ -2,7 +2,7 @@ name: Vérifier INKFORGE sous Windows
 on:
   push:
     branches: [main, 'fix/**']
-    tags: ['v*-rc.*']
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
 
@@ -33,9 +33,21 @@ jobs:
         with:
           name: inkforge-verifie
           path: dist/
-  candidate:
-    if: startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '-rc.')
-    needs: studio
+  installation_windows:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer le moteur sur un Windows vierge et vérifier PyTorch
+        run: |
+          python -c "import serveur_inkforge as s; s.install_engine(); assert (s.LOCAL_3D/'ready-v1').is_file(); s.install_engine(); import subprocess; subprocess.run([str(s.engine_python()),'-c','import torch; assert torch.version.cuda'],check=True)"
+  release_files:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [studio, installation_windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,8 +56,12 @@ jobs:
         with:
           name: inkforge-verifie
           path: dist
-      - name: Joindre les fichiers vérifiés à la préversion
+      - name: Joindre les fichiers vérifiés au brouillon de publication
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          version=$(jq -r .version dist/inkforge-update.json)
+          test "${TAG%%-rc.*}" = "v$version"
+          gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"

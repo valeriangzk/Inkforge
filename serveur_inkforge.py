@@ -165,7 +165,7 @@ def image_models(data):
 def describe_reference(entity,which):
     if not isinstance(entity,dict): return '',[]
     text=[]
-    for field,label in [('name','Nom'),('description','Description'),('appearance','Apparence'),('clothing','Vêtements'),('accessories','Accessoires'),('notes','Notes')]:
+    for field,label in [('name','Nom'),('description','Description'),('appearance','Apparence'),('colors','Couleurs'),('proportions','Proportions'),('clothing','Vêtements'),('accessories','Accessoires'),('notes','Notes')]:
         value=entity.get(field)
         if isinstance(value,str) and value.strip(): text.append(label+': '+value[:450])
     refs=[]
@@ -296,13 +296,17 @@ def engine_python():
     return LOCAL_3D / 'runtime-v1' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
 
 
+ENGINE_STEP = ''
+
 def install_engine():
+    global ENGINE_STEP
     if os.name != 'nt':
         raise ClientFailure('L’installation automatique TripoSR est prévue pour Windows.')
     if (LOCAL_3D / 'ready-v1').is_file() and engine_python().is_file():
         return
     LOCAL_3D.mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, '-m', 'venv', str(LOCAL_3D / 'bootstrap')], check=True)
+    ENGINE_STEP='Préparation de Python.'
     scripts = LOCAL_3D / 'bootstrap' / 'Scripts'
     subprocess.run([str(scripts / 'python'), '-m', 'pip', 'install', 'uv==0.8.22'], check=True)
     uv = str(scripts / 'uv.exe')
@@ -310,10 +314,12 @@ def install_engine():
     if not engine_python().exists():
         subprocess.run([uv,'venv','--python','3.11',str(engine_python().parents[1])],check=True)
     pip = [uv,'pip','install','--python',str(engine_python())]
+    ENGINE_STEP='Téléchargement des composants du moteur.'
     subprocess.run(pip+['--index-url','https://download.pytorch.org/whl/cu124','torch==2.6.0'],check=True)
     subprocess.run(pip+['numpy==1.26.4','opencv-python-headless==4.10.0.84','scikit-image==0.24.0',
         'transformers==4.35.0','omegaconf==2.3.0','einops==0.7.0','trimesh==4.0.5',
         'rembg==2.0.61','onnxruntime==1.20.1','imageio==2.36.1','pillow==10.4.0'],check=True)
+    ENGINE_STEP='Installation des sources TripoSR.'
     url = 'https://api.github.com/repos/VAST-AI-Research/TripoSR/zipball/' + SOURCE_REV
     with urlopen(Request(url, headers={'User-Agent':'INKFORGE'}),timeout=120) as response:
         data = response.read(64_000_001)
@@ -326,6 +332,7 @@ def install_engine():
                 target = LOCAL_3D / 'source' / relative
                 target.parent.mkdir(parents=True,exist_ok=True)
                 target.write_bytes(archive.read(name))
+    ENGINE_STEP='Vérification des composants installés.'
     subprocess.run([str(engine_python()),str(Path(__file__).resolve()),'--check-3d'],check=True)
     (LOCAL_3D / 'ready-v1').touch()
 
@@ -369,6 +376,7 @@ def run_engine(folder=None):
 
 
 def build_character_model(payload):
+    global ENGINE_STEP
     image = payload.get('image')
     if isinstance(image,str) and media_pattern.fullmatch(image):
         path,kind=media_path(image)
@@ -390,6 +398,7 @@ def build_character_model(payload):
             stage = Path(temporary)/'result'
             stage.mkdir()
             (stage/'input').write_bytes(data)
+            ENGINE_STEP='Reconstruction du modèle et préparation des vues. Au premier essai, les poids du moteur sont téléchargés.'
             result = subprocess.run([str(engine_python()),str(Path(__file__).resolve()),'--build-3d',str(stage)],check=False)
             if result.returncode:
                 raise ClientFailure('Reconstruction interrompue. Consulte la fenêtre noire pour le détail (pilote NVIDIA, téléchargement ou mémoire disponible).')
@@ -845,7 +854,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/updates/status":
             self.send_data(200, update_status())
         elif self.path == '/3d/status':
-            self.send_data(200,{'ready':(LOCAL_3D/'ready-v1').is_file() and engine_python().is_file()})
+            self.send_data(200,{'step':ENGINE_STEP if GPU_LOCK.locked() else '', 'ready':(LOCAL_3D/'ready-v1').is_file() and engine_python().is_file()})
         elif re.fullmatch(r'/3d/models/[a-f0-9]{64}',self.path):
             model=WORK/'models'/self.path.rsplit('/',1)[1]/'model.glb'
             if model.is_file():
