@@ -32,6 +32,22 @@ async function key(p){
  await p.locator('#apiSecret').fill('test-secret-never-save');
  await p.locator('#addApiKey').click();await p.locator('#apiToggle').click();
 }
+async function validateReference(p,trigger,subject,angle){
+ await trigger.click();
+ const dialog=p.locator('#aiProgressDialog');
+ await dialog.waitFor({state:'visible'});
+ // The dialog also opens on failure. Its close button is enabled when generation finishes.
+ try{
+  await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
+  assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject);
+  assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
+  await dialog.getByRole('button',{name:'Valider cette vue',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  await saved(p);
+ }catch(error){
+  throw new Error(angle+' — '+await dialog.locator('#aiDialogTitle').textContent()+' — '+await dialog.locator('#aiDialogStep').textContent(),{cause:error});
+ }
+}
 async function generate(p,prompt,accept=true){
  await p.locator('#aiPrompt').fill(prompt);
  await p.locator('#generate').click();
@@ -51,10 +67,8 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('5 '));
   await p.locator('#memorySave').click();await saved(p);await key(p);
   await p.route('**/ai/result',r=>r.abort('connectionreset'),{times:1});
-  await p.getByRole('button',{name:'Générer · Face',exact:true}).click();await p.waitForFunction(()=>!aiBusy);
-  assert.equal(await p.locator('#aiDialogTitle').textContent(),'Référence de Sujet de vérification');
+  await validateReference(p,p.getByRole('button',{name:'Générer · Face',exact:true}),'Sujet de vérification','Face');
   assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth===960));
-  await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
   console.log('PASS cinq originaux de 13 Mo, portrait généré et décodé, sauvegarde');
   await p.locator('[data-tab=places]').click();
   const answers=['Lieu de vérification','Façade en briques'];
@@ -103,9 +117,14 @@ async function generate(p,prompt,accept=true){
   await key(p);await p.locator('[data-tab=characters]').click();
   const face=await p.evaluate(()=>project.characters[0].views.front);
   for(const label of ['Profil gauche','Dos']){
-   await p.getByRole('button',{name:'Générer · '+label,exact:true}).click();
-   await p.getByRole('button',{name:'Valider cette vue'}).click();
-   await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
+   const before=await p.evaluate(()=>({...project.characters[0].views}));
+   await validateReference(p,p.getByRole('button',{name:'Générer · '+label,exact:true}),'Sujet de vérification',label);
+   const after=await p.evaluate(()=>({...project.characters[0].views}));
+   const angle=label==='Dos'?'back':'side';
+   assert.ok(after[angle]?.startsWith('/media/'));
+   assert.deepEqual(after,{...before,[angle]:after[angle]});
+   assert.ok(!Object.values(before).includes(after[angle]));
+
   }
   const views=await p.evaluate(()=>({...project.characters[0].views}));
   assert.equal(views.front,face);assert.ok(views.side&&views.back);
@@ -119,8 +138,7 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.ok(await p.locator('#studioBuild').isDisabled());
-  await p.locator('#placeReference').click();await p.getByRole('button',{name:'Valider cette vue'}).click();
-  await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
+  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Décor');
   assert.ok(await p.locator('#studioBuild').isEnabled());
   await p.reload();await p.waitForFunction(()=>workspaceReady);
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
