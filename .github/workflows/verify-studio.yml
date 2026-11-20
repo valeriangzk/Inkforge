@@ -2,7 +2,7 @@ name: Vérifier INKFORGE sous Windows
 on:
   push:
     branches: [main, 'fix/**']
-    tags: ['v*-rc.*']
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
 
@@ -33,8 +33,8 @@ jobs:
         with:
           name: inkforge-verifie
           path: dist/
-  candidate:
-    if: startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '-rc.')
+  release_files:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: studio
     runs-on: ubuntu-latest
     permissions:
@@ -44,8 +44,12 @@ jobs:
         with:
           name: inkforge-verifie
           path: dist
-      - name: Joindre les fichiers vérifiés à la préversion
+      - name: Joindre les fichiers vérifiés au brouillon de publication
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          version=$(jq -r .version dist/inkforge-update.json)
+          test "${TAG%%-rc.*}" = "v$version"
+          gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
