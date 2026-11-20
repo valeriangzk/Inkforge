@@ -61,6 +61,7 @@ class Provider(BaseHTTPRequestHandler):
         assert self.path=='/v1/images/generations'
         assert self.headers.get('Authorization')=='Bearer test-secret-never-save'
         req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        assert req['n']==1
         assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
         assert req['ratio'] in ('1:1','3:4','4:3') and 'response_format' not in req
         extra=req.get('extra_body',{})
@@ -105,7 +106,10 @@ class Provider(BaseHTTPRequestHandler):
                 duplicate.unlink()
             with (folder/'views.jsonl').open('a',encoding='utf-8') as log:
                 print(json.dumps({'prompt':prompt,'refs':len(images),'sha':hashlib.sha256(raw).hexdigest()}),file=log)
-        self.reply({'data':[{'b64_json':base64.b64encode(raw).decode()}]})
+        records=[{'b64_json':base64.b64encode(raw).decode()}]
+        if prompt.startswith('Vue opposée'):
+            records.append({'b64_json':base64.b64encode(png('unused',width=32)).decode()})
+        self.reply({'data':records})
 
 
 if __name__=='__main__':

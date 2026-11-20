@@ -33,6 +33,9 @@ async function key(p){
  await p.locator('#addApiKey').click();await p.locator('#apiToggle').click();
 }
 async function validateReference(p,trigger,subject,angle){
+ const metrics=path.join(folder,'metrics.jsonl');
+ const countCalls=()=>fs.existsSync(metrics)?fs.readFileSync(metrics,'utf8').trim().split('\n').length:0;
+ const before=countCalls();
  await trigger.click();
  const dialog=p.locator('#aiProgressDialog');
  await dialog.waitFor({state:'visible'});
@@ -41,6 +44,8 @@ async function validateReference(p,trigger,subject,angle){
   await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
   assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
   assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
+  assert.equal(countCalls(),before+1,'Un POST de génération Agnes par clic');
+  assert.equal(await dialog.locator('img:visible').count(),1);
   const preview=await dialog.locator('#aiDialogImage').getAttribute('src');
   if(!angle.startsWith('Vue ')){
    const request=JSON.parse(fs.readFileSync(path.join(folder,'views.jsonl'),'utf8').trim().split('\n').pop());
@@ -60,7 +65,12 @@ async function validateReference(p,trigger,subject,angle){
   }
   await dialog.getByRole('button',{name:'Valider cette vue',exact:true}).click();
   await dialog.waitFor({state:'hidden'});
-  await saved(p);return preview;
+  await saved(p);
+  const grid=p.locator(angle.startsWith('Vue ')?'#placeGrid':'#characterGrid');
+  const slot=grid.getByAltText(angle+' validé',{exact:true});
+  assert.equal(await slot.getAttribute('src'),preview);
+  assert.equal(await grid.locator('img').evaluateAll((imgs,url)=>imgs.filter(i=>i.getAttribute('src')===url).length,preview),1,'Le résultat validé apparaît une seule fois sur la fiche');
+  return preview;
  }catch(error){
   throw new Error(angle+' — '+await dialog.locator('#aiDialogTitle').textContent()+' — '+await dialog.locator('#aiDialogStep').textContent(),{cause:error});
  }
@@ -224,7 +234,15 @@ async function generate(p,prompt,accept=true){
    canvas.getContext('2d').drawImage(img,0,0);return canvas.toDataURL('image/png').split(',')[1];
   },beforeEcho.day.main);
   assert.ok(!mainPicture.equals(Buffer.from(reencoded,'base64')));
-  for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg']){
+  const brighter=await p.evaluate(async url=>{
+   const img=new Image();img.src=url;await img.decode();
+   const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+   const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+   const raster=ctx.getImageData(0,0,img.width,img.height);
+   for(let i=0;i<raster.data.length;i+=4)for(let c=0;c<3;c++)raster.data[i+c]+=7;
+   ctx.putImageData(raster,0,0);return canvas.toDataURL().split(',')[1];
+  },beforeEcho.day.main);
+  for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
    await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
    await p.waitForFunction(()=>!aiBusy);
@@ -233,6 +251,21 @@ async function generate(p,prompt,accept=true){
    await p.locator('#aiCloseDialog').click();
    assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),beforeEcho);
   }
+  const details=p.locator('#placeGrid details');
+  await details.locator('summary').click();
+  await p.waitForFunction(()=>document.querySelector('#placeGrid details pre').textContent.includes('Opération'));
+  const report=await details.innerText();
+  assert.ok(!report.includes('test-secret-never-save'));
+  const traces=await p.evaluate(()=>viewAttempts.filter(a=>a.mode==='day'&&a.status==='Validée'));
+  assert.equal(new Set(traces.map(a=>a.ticket)).size,traces.length);
+  assert.equal(new Set(traces.map(a=>a.request)).size,traces.length);
+  for(const trace of traces){
+   assert.match(trace.request,/^[a-f0-9]{64}$/);
+   assert.equal(trace.received,trace.preview);assert.equal(trace.preview,trace.stored);
+   assert.ok(report.includes(trace.request)&&report.includes(trace.received));
+  }
+  assert.ok(report.includes('Résultats reçus 2'));
+  assert.ok(report.includes('demandes différentes, fichier identique reçu'));
   await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();

@@ -206,7 +206,11 @@ async function referenceEntity(item,isPlace=false){
  for(const src of sources)references.push(await referenceForAgnes(src));
  return {name,description,lighting:isPlace?(item.lighting==='night'?'Nuit':'Jour'):undefined,appearance,colors,proportions,clothing,accessories,notes,model3d,references};
 }
-async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false){
+const viewAttempts=[];
+function mediaFingerprint(url){
+ return typeof url==='string'&&url.match(/^\/media\/([a-f0-9]{64})\./)?.[1]||'—';
+}
+async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false,attempt=null){
  const requestId=crypto.randomUUID(), body={requestId,apiKey:key,model,prompt,character:await referenceEntity(character),place:await referenceEntity(place,true),frame};
  let interrupted=false;
  try{await postJSON('/ai/generate',body)}catch(e){if(e.status)throw e;interrupted=true}
@@ -217,6 +221,7 @@ async function generateImage(key,model,prompt,character,place,frame,rejectRefere
   if(result && !result.pending)break;
   await new Promise(resolve=>setTimeout(resolve,750));
  }
+ if(attempt)Object.assign(attempt,{ticket:requestId,request:result.request_hash,received:mediaFingerprint(result.image),count:result.response_count});
  if(result.error)throw Error(result.error);
  if(rejectReferenceCopy&&result.input_copy)throw Error('Agnes a reproduit une référence à l’identique. Les vues validées sont conservées.');
  if(!mediaURL(result.image))throw Error('Image Agnes AI indisponible.');
@@ -298,12 +303,18 @@ async function placeThumbnail(source){
  ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,128,96);
  return ctx.getImageData(0,0,128,96).data;
 }
-function samePlacePicture(a,b){
+function samePlacePicture(a,b,allowExposureShift=false){
+ // Different directions should not reuse a composition with a small global exposure edit.
+ let offset=0;
+ if(allowExposureShift){
+  for(let i=0;i<a.length;i+=4)offset+=(a[i]-b[i])+(a[i+1]-b[i+1])+(a[i+2]-b[i+2]);
+  offset=Math.max(-16,Math.min(16,offset/(a.length*0.75)));
+ }
  let squared=0,changed=0;
  for(let i=0;i<a.length;i+=4){
   let peak=0;
   for(let c=0;c<3;c++){
-   const delta=a[i+c]-b[i+c];squared+=delta*delta;peak=Math.max(peak,Math.abs(delta));
+   const delta=a[i+c]-b[i+c]-offset;squared+=delta*delta;peak=Math.max(peak,Math.abs(delta));
   }
   if(peak>8)changed++;
  }
@@ -379,6 +390,8 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
  const key=agnesKey();
  if(!key)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const projectId=project.id;
+ const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
+ viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
  aiPending=null;aiBusy=true;aiClose.disabled=true;
  showAi('Création de la référence','Préparation de la vue depuis la fiche…');
  try{
@@ -420,7 +433,7 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
     // Condition on the approved identity, without mixing unlabeled camera angles.
     entity.portrait=character.views.front;entity.references=[];entity.img='';
    }
-   const image=await generateImage(key,model,prompt,place?null:entity,place?entity:null,place?{w:4,h:3}:{w:3,h:4},place&&(angle!=='main'||Boolean(relight)));
+   const image=await generateImage(key,model,prompt,place?null:entity,place?entity:null,place?{w:4,h:3}:{w:3,h:4},place&&(angle!=='main'||Boolean(relight)),attempt);
    if(place&&character.placeViews?.[otherLighting]?.[angle]===image){
     throw Error('Agnes a renvoyé la même image pour le jour et la nuit. Les vues validées sont conservées.');
    }
@@ -439,15 +452,17 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
      for(const url of blocked){
       let comparison;
       try{comparison=await placeThumbnail(url)}catch{continue} // Legacy remote images may be unavailable.
-      if(url===image||samePlacePicture(result,comparison)){
+      if(url===image||samePlacePicture(result,comparison,otherViews.includes(url))){
        throw Error('Agnes a reproduit une référence sans changer suffisamment la vue. Les vues validées sont conservées. Précise dans la fiche ce qui se trouve dans cette direction.');
       }
      }
     }
    }
-   aiPending={projectId,characterId:character.id,angle,place,lighting,image};
+   attempt.preview=mediaFingerprint(aiDialogImage.getAttribute('src'));
+   attempt.status='Aperçu';
+   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt};
    showAi('Référence de '+character.name+(' · '+(place?placeAngles:angles)[angle].label),place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
- }catch(e){showAi('Création de la référence impossible',e.message)}
+ }catch(e){attempt.status=e.message;showAi('Création de la référence impossible',e.message)}
  finally{aiBusy=false;aiClose.disabled=false}
 }
 
@@ -470,6 +485,8 @@ aiAccept.onclick=async()=>{
     workspace.projects[previous.id]=project=previous;aiPending=saved;
     showAi('Référence non enregistrée',e.message,saved.image);aiAccept.textContent='Réessayer l’enregistrement';return;
    }
+   saved.attempt.status='Validée';
+   saved.attempt.stored=mediaFingerprint(saved.place?character.placeViews[saved.lighting][saved.angle]:character.views[saved.angle]);
    history.push(previous);if(history.length>60)history.shift();future=[];
    aiPending=null;aiDialog.style.display='none';renderAll();notify('Référence enregistrée dans la fiche');
    return;
@@ -683,7 +700,7 @@ document.addEventListener('pointerdown',e=>{if(!contextMenu.contains(e.target))c
  }
 };
 $m('memorySave').onclick=()=>{const name=$m('memoryName').value.trim();if(!name){notify('Indiquez un nom pour cette fiche');return}const appearance=$m('memoryAppearance').value.trim(),clothing=$m('memoryClothing').value.trim(),accessories=$m('memoryAccessories').value.trim(),notes=$m('memoryNotes').value.trim();change(()=>{const old=editing===null?{id:uid()}:project[library][editing];const item=library==='places'?{...old,name,description:appearance,lighting:$m('placeLight').value,references:[...refs],img:refs[0]||''}:{...old,name,description:appearance,appearance,clothing,accessories,notes,references:[...refs],img:refs[0]||''};if(editing===null)project[library].push(item);else project[library][editing]=item});close();notify('Mémoire visuelle enregistrée')};$m('addChar').onclick=()=>open(null,'characters');$m('addPlace').onclick=()=>open(null,'places');
-renderLibrary=function(type){const place=type==='places',grid=$m(place?'placeGrid':'characterGrid');grid.replaceChildren();project[type].forEach((c,i)=>{const d=document.createElement('div');d.className='item';const src=source3D(c);if(src){const img=document.createElement('img');img.src=src;img.alt=c.name;d.append(img)}const h=document.createElement('h3');h.textContent=c.name;const info=document.createElement('p');info.className='help';info.textContent=(c.appearance||c.description||'Aucune description')+' • '+(c.references?.length||Number(!!c.img))+' référence(s)';const bar=document.createElement('div');bar.className='toolbar';const edit=document.createElement('button');edit.className='btn';edit.textContent=place?'Ouvrir la fiche':'Ouvrir la mémoire';edit.onclick=()=>open(i,type);const del=document.createElement('button');del.className='btn';del.textContent='Supprimer';del.onclick=()=>{if(confirm('Supprimer cette fiche et ses références ?'))change(()=>project[type].splice(i,1))};bar.append(edit);
+renderLibrary=function(type){const place=type==='places',grid=$m(place?'placeGrid':'characterGrid');grid.replaceChildren();project[type].forEach((c,i)=>{const d=document.createElement('div');d.className='item';const activeViews=place?c.placeViews?.[c.lighting||'day']:c.views;const src=source3D(c);if(src&&!Object.values(activeViews||{}).some(Boolean)){const img=document.createElement('img');img.src=src;img.alt=c.name;d.append(img)}const h=document.createElement('h3');h.textContent=c.name;const info=document.createElement('p');info.className='help';info.textContent=(c.appearance||c.description||'Aucune description')+' • '+(c.references?.length||Number(!!c.img))+' référence(s)';const bar=document.createElement('div');bar.className='toolbar';const edit=document.createElement('button');edit.className='btn';edit.textContent=place?'Ouvrir la fiche':'Ouvrir la mémoire';edit.onclick=()=>open(i,type);const del=document.createElement('button');del.className='btn';del.textContent='Supprimer';del.onclick=()=>{if(confirm('Supprimer cette fiche et ses références ?'))change(()=>project[type].splice(i,1))};bar.append(edit);
 const views=document.createElement('div');views.className='toolbar';
 if(place){
  const label=document.createElement('label');label.textContent='Éclairage ';
@@ -692,10 +709,38 @@ if(place){
 }
 for(const [key,{label}] of Object.entries(place?placeAngles:angles)){
  const box=document.createElement('div'),btn=document.createElement('button');btn.className='btn';
- const uri=place?c.placeViews?.[c.lighting||'day']?.[key]:c.views?.[key];if(uri){const preview=new Image();preview.src=uri;preview.alt=label+' validé';preview.height=96;box.append(preview)}
+ const uri=activeViews?.[key];box.dataset.view=key;if(uri){const preview=new Image();preview.src=uri;preview.alt=label+' validé';preview.height=96;box.append(preview)}
  btn.textContent=(uri?'Régénérer':'Générer')+' · '+label;btn.disabled=!place&&key!=='front'&&!c.views?.front;
  btn.onclick=()=>generateCharacterPortrait(c,key,place);box.append(btn);views.append(box);
 }
+const diagnostic=document.createElement('details'),summary=document.createElement('summary'),report=document.createElement('pre');
+summary.textContent='Diagnostic des vues';report.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';
+diagnostic.append(summary,report);
+diagnostic.ontoggle=()=>{
+ if(!diagnostic.open)return;
+ const lines=[];
+ for(const [key,{label}] of Object.entries(place?placeAngles:angles)){
+  const img=views.querySelector('[data-view="'+key+'"] img');
+  const uri=activeViews?.[key];
+  const displayed=img?.currentSrc?new URL(img.currentSrc).pathname:null;
+  if(uri&&displayed&&uri.startsWith('/media/')&&uri!==displayed)lines.push(label+' : l’image affichée diffère de celle enregistrée.');
+  lines.push(label+' · en mémoire '+mediaFingerprint(uri)+' · affichée '+mediaFingerprint(displayed));
+ }
+ const attempts=viewAttempts.filter(a=>a.projectId===project.id&&a.itemId===c.id);
+ for(const [index,a] of attempts.entries()){
+  const label=(place?placeAngles:angles)[a.angle].label;
+  for(const previous of attempts.slice(0,index).filter(b=>b.angle!==a.angle&&b.mode===a.mode)){
+   const pair=(place?placeAngles:angles)[previous.angle].label+' / '+label;
+   if(a.request&&a.request===previous.request)lines.push(pair+' : même demande envoyée au fournisseur.');
+   else if(a.received&&a.received!=='—'&&a.received===previous.received)lines.push(pair+' : demandes différentes, fichier identique reçu.');
+  }
+  if(a.preview&&a.preview!==a.received||a.stored&&a.stored!==a.received)lines.push(label+' : le résultat a changé entre la réception et la fiche.');
+  lines.push([label+' '+a.mode,a.status,'Opération '+(a.ticket||'—'),'Demande '+(a.request||'—'),
+   'Résultats reçus '+(a.count??'—'),'Réponse '+(a.received||'—'),'Aperçu '+(a.preview||'—'),'Enregistrement '+(a.stored||'—')].join(' · '));
+ }
+ report.textContent=lines.join('\n');
+};
+d.append(diagnostic);
 d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.6.1</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
  'use strict';
  const $=id=>document.getElementById(id),modal=$('inkUpdateDialog'),status=$('inkUpdateStatus');

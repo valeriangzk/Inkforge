@@ -283,7 +283,9 @@ def send_generate(payload,key):
     image=local_image(record)
     data=base64.b64decode(image.split(',',1)[1],validate=True)
     local=store_media(data,image[5:image.index(';')])
-    return {'image':local,'input_copy':image in req.get('extra_body',{}).get('image',[]),'references_used':len(req.get('extra_body',{}).get('image',[])),'model':model}
+    # Fingerprint the final provider payload only. Credentials travel in a separate header.
+    request_hash=hashlib.sha256(json.dumps(req,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    return {'request_hash':request_hash,'response_count':len(result['data']),'image':local,'input_copy':image in req.get('extra_body',{}).get('image',[]),'references_used':len(req.get('extra_body',{}).get('image',[])),'model':model}
 
 # Keep the optional GPU runtime and weights across studio updates.
 LOCAL_3D = Path(os.getenv('LOCALAPPDATA') or Path.home() / '.local' / 'share') / 'INKFORGE' / 'TripoSR'
