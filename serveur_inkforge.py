@@ -212,7 +212,18 @@ class ImageRedirect(HTTPRedirectHandler):
 
 
 def local_image(record):
-    value = record.get('b64_json') or record.get('url')
+    inline = record.get('b64_json')
+    url = record.get('url')
+    if inline:
+        try:
+            return decode_image_value(inline)
+        except ClientFailure:
+            if not url or url == inline:
+                raise
+    return decode_image_value(url)
+
+
+def decode_image_value(value):
     if not isinstance(value, str) or not value:
         raise ClientFailure('Agnes AI a retourné une réponse sans image.', 502)
     try:
@@ -265,6 +276,9 @@ def send_generate(payload,key):
     if refs:
         # Reference input format documented by Agnes AI. Raw base64 strings (without data URI prefix).
         req['extra_body']={'image':refs[:5],'response_format':'b64_json'}
+    else:
+        req['return_base64'] = True
+        req['extra_body'] = {'response_format': 'b64_json'}
     result=agnes_request(AGNES_GENERATE,key,req,max_bytes=14_000_000,timeout=110)
     if not isinstance(result,dict) or not isinstance(result.get('data'),list) or not result['data']:
         raise ClientFailure('Réponse de génération sans image. Vérifie le modèle.',502)
