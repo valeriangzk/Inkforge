@@ -33,9 +33,21 @@ jobs:
         with:
           name: inkforge-verifie
           path: dist/
+  installation_windows:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer le moteur sur un Windows vierge et vérifier PyTorch
+        run: |
+          python -c "import serveur_inkforge as s; s.install_engine(); assert (s.LOCAL_3D/'ready-v1').is_file(); s.install_engine(); import subprocess; subprocess.run([str(s.engine_python()),'-c','import torch; assert torch.version.cuda'],check=True)"
   release_files:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: studio
+    needs: [studio, installation_windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
