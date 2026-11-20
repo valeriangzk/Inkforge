@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from contextlib import contextmanager
-import subprocess, sys, uuid
+import subprocess, sys, uuid, atexit
 import json, webbrowser, threading, time, socket, zipfile, io, os, shutil, tempfile, re, hashlib, base64, mimetypes
 from urllib.request import build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
@@ -270,7 +270,7 @@ def send_generate(payload,key):
     # Raw HTTP contract: https://agnes-ai.com/en/docs/agnes-image-25-flash
     req={'model':model,'prompt':full_prompt,'n':1,'size':size}
     if model.startswith('agnes-image-2.5'):
-        req.update(size='1K', ratio='4:3' if ratio>1.2 else ('3:4' if ratio<0.8 else '1:1'))
+        req.update(size='1K', ratio='16:9' if frame.get('panorama') is True else '4:3' if ratio>1.2 else ('3:4' if ratio<0.8 else '1:1'))
     if refs:
         req['extra_body']={'image':list(dict.fromkeys(refs))[:5],'response_format':'b64_json'}
     else:
@@ -339,7 +339,7 @@ def install_engine():
     (LOCAL_3D / 'ready-v1').touch()
 
 
-def run_engine(folder=None):
+def load_engine(check_only=False):
     import types
     import numpy as np
     import torch
@@ -357,24 +357,102 @@ def run_engine(folder=None):
     sys.path.insert(0,str(LOCAL_3D / 'source'))
     from tsr.system import TSR
     from tsr.utils import remove_background, resize_foreground
-    if folder is None:
+    if check_only:
         return
     if not torch.cuda.is_available():
-        raise RuntimeError('CUDA indisponible. Mets à jour le pilote NVIDIA puis relance INKFORGE.')
+        raise ClientFailure('CUDA indisponible. Mets à jour le pilote NVIDIA puis relance INKFORGE.')
+    free,total=torch.cuda.mem_get_info()
+    budget=min(int(total*0.90),free-256*1024**2)
+    if budget<=0:raise ClientFailure('Mémoire vidéo disponible insuffisante.')
+    torch.cuda.set_per_process_memory_fraction(budget/total)
     for name in ('config.yaml','model.ckpt'):
         path = hf_hub_download('stabilityai/TripoSR',name,revision=WEIGHTS_REV)
     model = TSR.from_pretrained(str(Path(path).parent),'config.yaml','model.ckpt').eval().to('cuda')
     model.renderer.set_chunk_size(2048)
-    image = remove_background(Image.open(folder/'input').convert('RGBA'),rembg.new_session('u2netp',providers=['CPUExecutionProvider']))
-    image = resize_foreground(image,0.85)
-    bg = Image.new('RGB',image.size,(128,128,128))
-    bg.paste(image,mask=image.getchannel('A'))
-    with torch.inference_mode():
-        scene = model([bg],device='cuda')
-        mesh = model.extract_mesh(scene,True,resolution=160)[0]
-        mesh.export(str(folder/'model.glb'))
-        for i, view in enumerate(model.render(scene,4,height=256,width=256)[0]):
-            view.convert('RGB').save(folder/f'view-{i}.jpg',quality=88)
+    background = rembg.new_session('u2netp',providers=['CPUExecutionProvider'])
+    def reconstruct(folder,quality):
+        torch.cuda.reset_peak_memory_stats()
+        image=remove_background(Image.open(folder/'input').convert('RGBA'),background)
+        image=resize_foreground(image,0.85)
+        bg=Image.new('RGB',image.size,(128,128,128))
+        bg.paste(image,mask=image.getchannel('A'))
+        with torch.inference_mode():
+            scene=model([bg],device='cuda')
+            mesh=model.extract_mesh(scene,True,resolution=96 if quality=='preview' else 160)[0]
+            mesh.export(str(folder/'model.glb'))
+            if quality=='final':
+                for i,view in enumerate(model.render(scene,4,height=256,width=256)[0]):
+                    view.convert('RGB').save(folder/f'view-{i}.jpg',quality=88)
+        torch.cuda.synchronize()
+        return round(torch.cuda.max_memory_reserved()/1048576)
+    return reconstruct
+
+
+def engine_loop(reader,writer,loader):
+    reconstruct=None
+    for line in reader:
+        try:
+            job=json.loads(line)
+            cold=reconstruct is None
+            if cold:reconstruct=loader()
+            peak=reconstruct(Path(job['folder']),job['quality'])
+            reply={'cold':cold,'gpu_mib':peak}
+        except Exception as exc:
+            print(str(exc),file=sys.stderr)
+            reply={'error':str(exc) if isinstance(exc,ClientFailure) else 'Reconstruction interrompue. Vérifie le pilote et la mémoire vidéo disponible.'}
+        print(json.dumps(reply),file=writer,flush=True)
+        if 'error' in reply:return
+
+
+class WarmEngine:
+    def __init__(self,idle=300):
+        self.lock=threading.Lock()
+        self.process=None
+        self.timer=None
+        self.idle=idle
+
+    def _stop(self):
+        if self.timer:
+            self.timer.cancel()
+            self.timer=None
+        if self.process:
+            self.process.kill()
+            self.process.wait()
+            self.process.stdin.close()
+            self.process.stdout.close()
+            self.process=None
+
+    def stop(self):
+        with self.lock:self._stop()
+
+    def expire(self):
+        with self.lock:
+            if self.timer is threading.current_thread():self._stop()
+
+    def run(self,folder,quality):
+        with self.lock:
+            if self.timer:self.timer.cancel()
+            self.timer=None
+            start=time.monotonic()
+            try:
+                if self.process is None or self.process.poll() is not None:
+                    self._stop()
+                    self.process=subprocess.Popen([str(engine_python()),str(Path(__file__).resolve()),'--worker-3d'],
+                        stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,encoding='utf-8')
+                self.process.stdin.write(json.dumps({'folder':str(folder.resolve()),'quality':quality})+'\n')
+                self.process.stdin.flush()
+                result=json.loads(self.process.stdout.readline())
+                if 'error' in result:raise ClientFailure(result['error'])
+            except BaseException:
+                self._stop()
+                raise
+            self.timer=threading.Timer(self.idle,self.expire)
+            self.timer.daemon=True
+            self.timer.start()
+            return {**result,'seconds':round(time.monotonic()-start,2)}
+
+warm_engine=WarmEngine()
+atexit.register(warm_engine.stop)
 
 
 def build_character_model(payload):
@@ -389,7 +467,10 @@ def build_character_model(payload):
         if not isinstance(image,str) or not re.fullmatch(r'data:image/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+',image):
             raise ClientFailure('Enregistre une référence PNG, JPEG ou WebP dans la fiche.')
         data=base64.b64decode(image.split(',',1)[1],validate=True)
-    ident = hashlib.sha256(data).hexdigest()
+    quality=payload.get('quality','final')
+    if quality not in ('preview','final'):raise ClientFailure('Qualité 3D inconnue.')
+    ident = hashlib.sha256(data if quality=='final' else b'preview-96:'+data).hexdigest()
+    metrics={'cached':True}
     models = WORK / 'models'
     target = models / ident
     if not (target/'model.glb').exists():
@@ -401,12 +482,10 @@ def build_character_model(payload):
             stage.mkdir()
             (stage/'input').write_bytes(data)
             ENGINE_STEP='Reconstruction du modèle et préparation des vues. Au premier essai, les poids du moteur sont téléchargés.'
-            result = subprocess.run([str(engine_python()),str(Path(__file__).resolve()),'--build-3d',str(stage)],check=False)
-            if result.returncode:
-                raise ClientFailure('Reconstruction interrompue. Consulte la fenêtre noire pour le détail (pilote NVIDIA, téléchargement ou mémoire disponible).')
+            metrics=warm_engine.run(stage,quality)
             (stage/'input').unlink()
             stage.rename(target)
-    return {'id':ident}
+    return {'id':ident,**metrics}
 
 
 
@@ -1118,8 +1197,14 @@ def serve(handler):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] in (['--check-3d'],['--build-3d']):
-        run_engine(Path(sys.argv[2]) if len(sys.argv)>2 else None)
+    if '--check-3d' in sys.argv:
+        load_engine(check_only=True)
+        sys.exit(0)
+    if '--worker-3d' in sys.argv:
+        # Native dependencies can print to stdout. Reserve a separate descriptor for replies.
+        with os.fdopen(os.dup(sys.stdout.fileno()),'w',encoding='utf-8') as replies:
+            os.dup2(sys.stderr.fileno(),sys.stdout.fileno())
+            engine_loop(sys.stdin,replies,load_engine)
         sys.exit(0)
     if '--restore' in sys.argv:
         maintenance_server()

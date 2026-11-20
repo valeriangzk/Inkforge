@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.6.1"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.0"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
 :root{--bg:#0c1018;--panel:#151b26;--line:#293242;--txt:#eef2f7;--muted:#91a0b4;--accent:#8c83ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,Arial}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:210px minmax(0,1fr) 290px;min-height:100vh}aside{background:#111722;padding:17px;border-right:1px solid var(--line)}aside.right{border:0;border-left:1px solid var(--line)}.logo{font-size:23px;font-weight:900;letter-spacing:2px}.logo span{color:var(--accent)}.small,.muted{color:var(--muted);font-size:12px}.nav{display:grid;gap:7px;margin-top:28px}.btn,.nav button{background:#262c3b;border:1px solid #3a4455;border-radius:9px;color:#e1e7f0;padding:10px 12px;text-align:center}.nav button{text-align:left}.nav button.active,.btn.primary{background:var(--accent);color:#10121b;font-weight:750;border-color:transparent}.btn:hover{filter:brightness(1.15)}main{padding:22px;min-width:0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.top h1{margin:0;font-size:24px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:15px 0}.panel h3{margin:0 0 12px}.section{display:none}.section.active{display:block}.page-viewport{overflow:auto;padding:18px;background:#0d121c;border-radius:10px;text-align:center}.page{position:relative;background:#f5f4ef;width:600px;height:820px;margin:auto;box-shadow:0 12px 40px #0008;transform-origin:top left;overflow:hidden;text-align:left}.frame{position:absolute;background:#fff;border:2px solid #141414;overflow:hidden;cursor:move;touch-action:none}.frame.selected{outline:3px solid var(--accent);outline-offset:-3px}.frame img{width:100%;height:100%;object-fit:cover;pointer-events:none}.empty{width:100%;height:100%;display:grid;place-items:center;color:#b3b3b3;font-size:12px}.bubble{position:absolute;background:white;color:#111;border:2px solid #111;border-radius:50%;padding:10px 15px;max-width:85%;min-width:65px;text-align:center;cursor:grab;touch-action:none;white-space:pre-wrap;overflow-wrap:anywhere}.handle{position:absolute;bottom:0;right:0;background:var(--accent);width:16px;height:16px;cursor:nwse-resize;touch-action:none}.field{display:grid;gap:5px;margin:11px 0}.field input,.field textarea,.field select{background:#0d121b;color:white;border:1px solid #344052;border-radius:8px;padding:10px;width:100%}.field textarea{min-height:75px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.item{background:#1b2230;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:hidden}.item img{width:100%;height:145px;object-fit:contain;background:#10151e;border-radius:8px}.item h3{margin:9px 0}.status{background:#1c2432;padding:12px;border-radius:9px;color:#bbc9dd;font-size:12px;line-height:1.5}.hidden{display:none!important}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.preview3d{height:360px;background:radial-gradient(circle,#353e59,#111823);border:1px dashed #59647c;border-radius:12px;display:grid;place-items:center;text-align:center;overflow:hidden}model-viewer{width:100%;height:100%}.help{font-size:12px;color:var(--muted);line-height:1.6}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#303a55;color:white;padding:10px 18px;border-radius:10px;z-index:100;display:none}@media(max-width:1150px){.app{grid-template-columns:170px minmax(0,1fr)}aside.right{grid-column:2;border-left:0;border-top:1px solid var(--line)}}@media(max-width:680px){.app{display:block}aside{padding:12px}.nav{display:flex;overflow:auto;margin-top:12px}.nav button{white-space:nowrap}main{padding:12px}.page-viewport{padding:8px}.top h1{font-size:20px}}@media print{body{background:white}.app>aside,.top,.toolbar,.panel>h3,.help{display:none!important}main{padding:0}.panel,.page-viewport{border:0;padding:0;margin:0;background:white}.page{box-shadow:none;transform:none!important;margin:0;break-after:page}.frame.selected{outline:0}.handle{display:none}}
 
 /* Panneau de clés API, isolé des données de projet */
@@ -34,7 +34,7 @@ body{padding-bottom:46px}.api-bottom{position:fixed;bottom:0;left:0;right:0;z-in
 <section class="section" id="places"><div class="panel"><h3>Bibliothèque de décors</h3><div class="toolbar"><button class="btn primary" id="addPlace">+ Ajouter un décor</button></div><div class="grid" id="placeGrid"></div></div></section>
 <section class="section" id="studio3d"><div class="panel"><h3>Studio 3D</h3><button class="btn" id="installTripo">Installer Tripo sur mon PC (TripoSR)</button><p class="help">Windows et carte NVIDIA compatible CUDA. Prévois plusieurs Go de téléchargement. La reconstruction utilise le PC, sans crédits Tripo. La création de références avec Agnes utilise ton compte Agnes.</p><p id="engineState"></p><p id="tripoStatus" role="status"></p><div class="field"><label>Importer un modèle .glb / .gltf</label><input type="file" id="modelFile" accept=".glb,.gltf,model/gltf-binary"></div><div class="preview3d" id="modelArea"><span class="muted">Importez un modèle pour activer la vue 3D.</span></div><div class="field"><label>Personnages<select id="studioCharacter"></select></label><label>Décors<select id="studioPlace"></select></label></div>
 <div id="studioSources" style="display:flex;flex-wrap:wrap"></div><p id="studioHint"></p>
-<div class="toolbar"><button class="btn" id="placeReference" hidden>Générer une référence du décor</button><button class="btn primary" id="studioBuild">Générer le modèle 3D</button><button class="btn" id="studioOpen">Ouvrir le modèle enregistré</button></div>
+<div class="toolbar"><button class="btn" id="placeReference" hidden>Générer une référence du décor</button><button class="btn" id="studioPreview">Aperçu 3D rapide</button><button class="btn primary" id="studioBuild">Générer en qualité finale</button><button class="btn" id="studioOpen">Ouvrir le modèle enregistré</button></div>
 <progress hidden id="studioProgress" aria-label="Opération 3D en cours"></progress></div></section>
 <section class="section" id="projects"><div class="panel"><h3>Gestion des projets</h3><div class="field"><label>Nom du manga</label><input id="titleInput" placeholder="Titre du projet"></div><div class="field"><label>Chapitre actuel</label><input id="chapterInput" type="number" min="1"></div><div class="toolbar"><button class="btn primary" id="newProject">+ Nouveau projet</button><button class="btn" id="saveVersion">Enregistrer une version</button><button class="btn" id="saveJSON2">Exporter JSON</button></div><div class="field"><label>Importer un projet JSON</label><input type="file" id="importJSON" accept=".json,application/json"></div><h3>Projets enregistrés sur cet appareil</h3><div id="projectList" class="grid"></div><h3>Versions du projet</h3><div id="versionList" class="grid"></div><p class="help">Les projets sont stockés dans le navigateur. Exportez régulièrement un JSON pour éviter toute perte si vous effacez les données du navigateur.</p></div></section>
 <section class="section" id="ai"><div class="panel">
@@ -339,13 +339,14 @@ function renderStudio(){
  $('studioHint').textContent=!item?'Choisis une fiche pour créer ou ouvrir son modèle.':!src?'Ajoute une image dans la fiche avant la reconstruction.':'TripoSR reconstruit depuis la première image affichée. Tourne le modèle pour comparer les autres angles. Pour un décor, privilégie un élément isolé.';
  $('placeReference').hidden=!item||type!=='places';
  $('studioBuild').disabled=!src||!$('studioProgress').hidden;
+ $('studioPreview').disabled=$('studioBuild').disabled;
  $('studioOpen').disabled=!item?.model3d||!$('studioProgress').hidden;
 }
 for(const [id,other] of [['studioCharacter','studioPlace'],['studioPlace','studioCharacter']]){
  $(id).onchange=()=>{$(other).value='';renderStudio()};
 }
 $('placeReference').onclick=()=>{const {item,type}=selection3D();if(item&&type==='places')generateCharacterPortrait(item,'main',true)};
-for(const [id,build] of [['studioBuild',true],['studioOpen',false]]){
+for(const [id,build] of [['studioBuild',true],['studioOpen',false],['studioPreview','preview']]){
  $(id).onclick=()=>{const {type,item}=selection3D();if(item)characterModel(item,build,type)};
 }
 async function characterModel(character,build,type='characters'){
@@ -358,46 +359,83 @@ async function characterModel(character,build,type='characters'){
  document.querySelector('[data-tab="studio3d"]').click();
  const status=$('tripoStatus');
  try{
-   let id=character.model3d;
+   let id=character.model3d,metrics='';
    if(build){
      if(!source)throw Error('Génère et garde une référence dans la fiche du personnage.');
      if(!await tripoReady())throw Error('Clique sur « Installer Tripo sur mon PC », puis relance la génération.');
      status.textContent='Reconstruction locale en cours. Au premier lancement, le modèle IA est téléchargé. Laisse le studio ouvert.';
      let result;const timer=setInterval(()=>tripoReady().catch(()=>{}),1800);
-     try{result=await aiFetch('/3d/build',{image:source})}finally{clearInterval(timer)}
+     try{result=await aiFetch('/3d/build',{image:source,quality:build==='preview'?'preview':'final'})}finally{clearInterval(timer)}
      const live=project[type].find(c=>c.id===character.id);
      if(project.id!==projectId||!live)throw Error('Le projet ou le personnage a changé. Rouvre sa fiche.');
      if(source!==source3D(live))throw Error('La référence a changé. Relance la reconstruction.');
      id=result.id;
-     const previous=live.model3d;
-     live.model3d=id;
-     try{await persist(true)}catch(e){live.model3d=previous;throw e}
-     renderLibrary(type);
+     metrics=result.cached?'Modèle déjà calculé.':(result.cold?'Moteur démarré':'Moteur réutilisé')+' · '+result.seconds+' s · pic mémoire réservé par PyTorch '+result.gpu_mib+' Mio';
+     if(build!=='preview'){
+      const previous=live.model3d;
+      live.model3d=id;
+      try{await persist(true)}catch(e){live.model3d=previous;throw e}
+      renderLibrary(type);
+     }
    }
    const response=await fetch('/3d/models/'+encodeURIComponent(id));
    if(!response.ok)throw Error('Modèle absent sur ce PC. Recrée-le depuis la référence du personnage.');
    const file=new File([await response.blob()],'personnage.glb',{type:'model/gltf-binary'});
    await $('modelFile').onchange({target:{files:[file]}});
-   status.textContent='Modèle de '+character.name+' enregistré sur ce PC. Ses vues servent de références dans Génération IA.';
+   status.textContent=(build==='preview'?'Aperçu rapide de ':'Modèle de ')+character.name+'. '+metrics;
  }catch(e){status.textContent=e.message}finally{$('studioProgress').hidden=true;renderStudio()}
 }
 
+// Perspective projection from a single equirectangular scene. Longitude wraps at the seam.
+async function panoramaView(source,angle,lighting){
+ const yaw={main:0,right:Math.PI/2,opposite:Math.PI,left:-Math.PI/2}[angle];
+ const img=new Image();img.src=source;await img.decode();
+ const map=document.createElement('canvas');map.width=Math.min(4096,img.naturalWidth);map.height=map.width>>1;
+ const mc=map.getContext('2d');mc.drawImage(img,0,0,map.width,map.height);
+ const pixels=mc.getImageData(0,0,map.width,map.height).data;
+ const out=document.createElement('canvas');out.width=960;out.height=720;
+ const ctx=out.getContext('2d'),raster=ctx.createImageData(out.width,out.height);
+ const night=lighting==='night',gain=night?[0.34,0.43,0.62]:[1,1,1];
+ for(let x=0;x<out.width;x++){
+  const dx=2*(x+0.5)/out.width-1, distance=Math.hypot(1,dx);
+  const u=((0.5+(yaw+Math.atan(dx))/(2*Math.PI)+1)%1)*map.width;
+  const sx=Math.floor(u),next=(sx+1)%map.width,fx=u-sx;
+  for(let y=0;y<out.height;y++){
+   const v=(0.5+Math.atan2((2*y+1-out.height)/out.width,distance)/Math.PI)*map.height;
+   const sy=Math.floor(v),fy=v-sy,row=sy*map.width,row2=Math.min(sy+1,map.height-1)*map.width;
+   const dest=(y*out.width+x)*4;
+   for(let c=0;c<3;c++){
+    const top=pixels[(row+sx)*4+c]*(1-fx)+pixels[(row+next)*4+c]*fx;
+    const bottom=pixels[(row2+sx)*4+c]*(1-fx)+pixels[(row2+next)*4+c]*fx;
+    raster.data[dest+c]=gain[c]*((1-fy)*top+fy*bottom);
+   }
+   raster.data[dest+3]=255;
+  }
+ }
+ ctx.putImageData(raster,0,0);
+ return fileData(await new Promise(resolve=>out.toBlob(resolve,'image/png')));
+}
 async function generateCharacterPortrait(character,angle='front',place=false) {
  if(!place&&angle!=='front'&&!character.views?.front)return showAi('Face à valider','Génère puis valide la vue de face en premier.');
- if(![character.description,character.appearance,character.clothing,character.accessories,character.notes,source3D(character)].some(Boolean))return showAi('Fiche à compléter','Décris la fiche ou ajoute une image de référence.');
+ const sphere=place&&angle==='panorama';
+ const local=place&&!sphere&&character.panorama;
+ if(place&&!sphere&&!local&&character.spatialMode==='panorama'){
+  return showAi('Panorama à préparer','Dans Décors, importe un panorama 360° ou crée-le avec Agnes. Une fois validé, il alimente les quatre vues.');
+ }
+ if(!local&&![character.description,character.appearance,character.clothing,character.accessories,character.notes,source3D(character)].some(Boolean))return showAi('Fiche à compléter','Décris la fiche ou ajoute une image de référence.');
 
  if(aiBusy)return;
  const key=agnesKey();
- if(!key)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const projectId=project.id;
  const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
  viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
  aiPending=null;aiBusy=true;aiClose.disabled=true;
  showAi('Création de la référence','Préparation de la vue depuis la fiche…');
  try{
-   if(!$('agnesModel').value)await loadAiModels(false,true);
+   if(!local&&!$('agnesModel').value)await loadAiModels(false,true);
    const model=$('agnesModel').value;
-   if(!model)throw Error('Aucun modèle image disponible avec cette clé.');
+   if(!local&&!model)throw Error('Aucun modèle image disponible avec cette clé.');
    const lighting=character.lighting||'day';
    const otherLighting=lighting==='night'?'day':'night';
    const otherViews=place?Object.values(character.placeViews||{}).flatMap(group=>
@@ -405,7 +443,7 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
    const alternate=place&&character.placeViews?.[otherLighting]?.[angle];
    const relight=alternate&&!otherViews.includes(alternate);
    let refs=[];
-   if(place){
+   if(place&&!sphere&&!local){
     // A previous failed attempt at this angle must not become its camera template.
     const anchor=relight?alternate:angle!=='main'&&(character.placeViews?.[lighting]?.main||character.placeViews?.[otherLighting]?.main);
     const available=placeReferences(character,angle);
@@ -416,7 +454,7 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
      if(!refs.length)refs=available.filter(([url])=>otherViews.includes(url)).slice(0,1);
     }
    }
-   const prompt=place?[
+   const prompt=sphere?'Panorama équirectangulaire sphérique complet 360° horizontal × 180° vertical, en plein jour. Une seule image continue sans cadre, depuis le centre du lieu. Horizon au milieu, zénith en haut, nadir en bas, extrémités gauche et droite raccordées. Répartis architecture et objets de la fiche aux emplacements décrits.':place?[
     placeAngles[angle].label+'. '+placeAngles[angle].direction,
     'Une seule perspective à hauteur des yeux, sans personnage ni texte. Conserve le plan du lieu, les dimensions, portes, fenêtres, meubles, objets, couleurs et matériaux à leur emplacement. Ne retourne pas l’image en miroir.',
     lighting==='night'?'Nuit : extérieur sombre, ombres et éclairages nocturnes.':'Jour : lumière du jour et ombres naturelles.',
@@ -426,22 +464,24 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
     ...refs.map(([,label],i)=>'Image '+(i+1)+' : '+label+'.')
    ].join(' '):'Angle demandé — '+angles[angle].label+'. '+angles[angle].direction+' Dessine une seule vue en pied sur fond uni. Tourne la caméra autour du corps entier. Garde la pose et les détails asymétriques sur leur côté anatomique. Les images jointes définissent l’identité, les couleurs et la tenue, indépendamment de leur orientation.';
    const entity={...character,model3d:null,views:null};
-   if(place){
+   if(sphere){entity.lighting='day';entity.references=placeReferences(character,'main').slice(0,5).map(([url])=>url);entity.placeViews=null}
+   else if(place){
     entity.placeViews=null;entity.references=refs.map(([url])=>url);entity.img='';
    }
    if(!place && angle!=='front'){
     // Condition on the approved identity, without mixing unlabeled camera angles.
     entity.portrait=character.views.front;entity.references=[];entity.img='';
    }
-   const image=await generateImage(key,model,prompt,place?null:entity,place?entity:null,place?{w:4,h:3}:{w:3,h:4},place&&(angle!=='main'||Boolean(relight)),attempt);
-   if(place&&character.placeViews?.[otherLighting]?.[angle]===image){
+   const image=local?await panoramaView(local,angle,lighting):await generateImage(key,model,prompt,place?null:entity,place?entity:null,sphere?{w:16,h:9,panorama:true}:place?{w:4,h:3}:{w:3,h:4},place&&!sphere&&(angle!=='main'||Boolean(relight)),attempt);
+   if(local){attempt.ticket=crypto.randomUUID();attempt.request='Panorama '+mediaFingerprint(local)+' / '+angle+' / '+lighting;attempt.received=mediaFingerprint(image);attempt.count=1}
+   if(place&&!local&&character.placeViews?.[otherLighting]?.[angle]===image){
     throw Error('Agnes a renvoyé la même image pour le jour et la nuit. Les vues validées sont conservées.');
    }
    const groups=place?Object.values(character.placeViews||{}):[character.views];
    if(groups.some(group=>Object.entries(group||{}).some(([key,url])=>key!==angle && url===image))){
-    throw Error('Agnes a renvoyé la copie exacte d’une autre vue. Les vues validées sont conservées.');
+    throw Error(local?'Ces deux directions du panorama sont identiques. Vérifie le panorama.':'Agnes a renvoyé la copie exacte d’une autre vue. Les vues validées sont conservées.');
    }
-   if(place){
+   if(place&&!sphere&&!local){
     const blocked=new Set(otherViews);
     if(alternate)blocked.add(alternate);
     if(angle!=='main'&&!relight){
@@ -458,10 +498,11 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
      }
     }
    }
+   if(local){aiDialogImage.src=image;await aiDialogImage.decode()}
    attempt.preview=mediaFingerprint(aiDialogImage.getAttribute('src'));
    attempt.status='Aperçu';
    aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt};
-   showAi('Référence de '+character.name+(' · '+(place?placeAngles:angles)[angle].label),place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
+   showAi('Référence de '+character.name+(' · '+(sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label)),sphere?'Vérifie que le panorama couvre tout le lieu et que ses bords se raccordent. Les quatre vues seront ensuite extraites sur ce PC.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
  }catch(e){attempt.status=e.message;showAi('Création de la référence impossible',e.message)}
  finally{aiBusy=false;aiClose.disabled=false}
 }
@@ -473,7 +514,8 @@ aiAccept.onclick=async()=>{
    const character=project[saved.place?'places':'characters'].find(item=>item.id===saved.characterId);
    if(saved.projectId!==project.id||!character)return showAi('Fiche introuvable','Rouvre le personnage depuis le projet.');
    const previous=clone(project);
-   if(saved.place){
+   if(saved.place&&saved.angle==='panorama')character.panorama=saved.image;
+   else if(saved.place){
     character.placeViews={...character.placeViews,[saved.lighting]:{...character.placeViews?.[saved.lighting],[saved.angle]:saved.image}};
    }
    else{
@@ -486,7 +528,7 @@ aiAccept.onclick=async()=>{
     showAi('Référence non enregistrée',e.message,saved.image);aiAccept.textContent='Réessayer l’enregistrement';return;
    }
    saved.attempt.status='Validée';
-   saved.attempt.stored=mediaFingerprint(saved.place?character.placeViews[saved.lighting][saved.angle]:character.views[saved.angle]);
+   saved.attempt.stored=mediaFingerprint(saved.angle==='panorama'?character.panorama:saved.place?character.placeViews[saved.lighting][saved.angle]:character.views[saved.angle]);
    history.push(previous);if(history.length>60)history.shift();future=[];
    aiPending=null;aiDialog.style.display='none';renderAll();notify('Référence enregistrée dans la fiche');
    return;
@@ -699,10 +741,30 @@ document.addEventListener('pointerdown',e=>{if(!contextMenu.contains(e.target))c
   if(formSession===session){input.value='';input.disabled=false;$m('memorySave').disabled=false}
  }
 };
-$m('memorySave').onclick=()=>{const name=$m('memoryName').value.trim();if(!name){notify('Indiquez un nom pour cette fiche');return}const appearance=$m('memoryAppearance').value.trim(),clothing=$m('memoryClothing').value.trim(),accessories=$m('memoryAccessories').value.trim(),notes=$m('memoryNotes').value.trim();change(()=>{const old=editing===null?{id:uid()}:project[library][editing];const item=library==='places'?{...old,name,description:appearance,lighting:$m('placeLight').value,references:[...refs],img:refs[0]||''}:{...old,name,description:appearance,appearance,clothing,accessories,notes,references:[...refs],img:refs[0]||''};if(editing===null)project[library].push(item);else project[library][editing]=item});close();notify('Mémoire visuelle enregistrée')};$m('addChar').onclick=()=>open(null,'characters');$m('addPlace').onclick=()=>open(null,'places');
+$m('memorySave').onclick=()=>{const name=$m('memoryName').value.trim();if(!name){notify('Indiquez un nom pour cette fiche');return}const appearance=$m('memoryAppearance').value.trim(),clothing=$m('memoryClothing').value.trim(),accessories=$m('memoryAccessories').value.trim(),notes=$m('memoryNotes').value.trim();change(()=>{const old=editing===null?{id:uid()}:project[library][editing];const item=library==='places'?{...(editing===null?{spatialMode:'panorama'}:{}),...old,name,description:appearance,lighting:$m('placeLight').value,references:[...refs],img:refs[0]||''}:{...old,name,description:appearance,appearance,clothing,accessories,notes,references:[...refs],img:refs[0]||''};if(editing===null)project[library].push(item);else project[library][editing]=item});close();notify('Mémoire visuelle enregistrée')};$m('addChar').onclick=()=>open(null,'characters');$m('addPlace').onclick=()=>open(null,'places');
 renderLibrary=function(type){const place=type==='places',grid=$m(place?'placeGrid':'characterGrid');grid.replaceChildren();project[type].forEach((c,i)=>{const d=document.createElement('div');d.className='item';const activeViews=place?c.placeViews?.[c.lighting||'day']:c.views;const src=source3D(c);if(src&&!Object.values(activeViews||{}).some(Boolean)){const img=document.createElement('img');img.src=src;img.alt=c.name;d.append(img)}const h=document.createElement('h3');h.textContent=c.name;const info=document.createElement('p');info.className='help';info.textContent=(c.appearance||c.description||'Aucune description')+' • '+(c.references?.length||Number(!!c.img))+' référence(s)';const bar=document.createElement('div');bar.className='toolbar';const edit=document.createElement('button');edit.className='btn';edit.textContent=place?'Ouvrir la fiche':'Ouvrir la mémoire';edit.onclick=()=>open(i,type);const del=document.createElement('button');del.className='btn';del.textContent='Supprimer';del.onclick=()=>{if(confirm('Supprimer cette fiche et ses références ?'))change(()=>project[type].splice(i,1))};bar.append(edit);
 const views=document.createElement('div');views.className='toolbar';
 if(place){
+ const actions=document.createElement('div');actions.className='toolbar';
+ const make=document.createElement('button');make.className='btn';make.textContent='Créer le panorama avec Agnes';
+ make.onclick=()=>generateCharacterPortrait(c,'panorama',true);
+ const upload=document.createElement('label');upload.className='btn';upload.textContent='Importer un panorama 360° ';
+ const input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp';
+ input.onchange=async()=>{
+  const file=input.files[0];if(!file)return;
+  const url=URL.createObjectURL(file);
+  try{
+   const img=new Image();img.src=url;await img.decode();
+   if(Math.abs(img.width/img.height-2)>0.03)throw Error('Choisis un panorama équirectangulaire 360° au format 2:1.');
+   const src=await fileData(file);
+   if(project.places.includes(c))change(()=>{c.panorama=src});
+  }catch(e){notify(e.message)}finally{URL.revokeObjectURL(url);input.value=''}
+ };
+ upload.append(input);actions.append(make,upload);d.append(actions);
+ if(c.panorama||c.spatialMode==='panorama'){
+  const hint=document.createElement('p');hint.textContent=!c.panorama?'Prépare un panorama pour cadrer les quatre vues.':'Panorama actif · Les quatre boutons cadrent le lieu sur ce PC. Nuit applique un éclairage bleu atténué.';d.append(hint);
+  const remove=document.createElement('button');remove.className='btn';remove.textContent='Revenir aux vues IA';remove.onclick=()=>change(()=>{delete c.panorama;c.spatialMode='ai'});actions.append(remove);
+ }
  const label=document.createElement('label');label.textContent='Éclairage ';
  const select=$m('placeLight').cloneNode(true);select.removeAttribute('id');select.value=c.lighting||'day';
  select.onchange=()=>change(()=>{c.lighting=select.value});label.append(select);views.append(label);
@@ -728,9 +790,9 @@ diagnostic.ontoggle=()=>{
  }
  const attempts=viewAttempts.filter(a=>a.projectId===project.id&&a.itemId===c.id);
  for(const [index,a] of attempts.entries()){
-  const label=(place?placeAngles:angles)[a.angle].label;
+  const label=a.angle==='panorama'?'Panorama 360°':(place?placeAngles:angles)[a.angle].label;
   for(const previous of attempts.slice(0,index).filter(b=>b.angle!==a.angle&&b.mode===a.mode)){
-   const pair=(place?placeAngles:angles)[previous.angle].label+' / '+label;
+   const pair=(previous.angle==='panorama'?'Panorama':(place?placeAngles:angles)[previous.angle].label)+' / '+label;
    if(a.request&&a.request===previous.request)lines.push(pair+' : même demande envoyée au fournisseur.');
    else if(a.received&&a.received!=='—'&&a.received===previous.received)lines.push(pair+' : demandes différentes, fichier identique reçu.');
   }
@@ -741,7 +803,7 @@ diagnostic.ontoggle=()=>{
  report.textContent=lines.join('\n');
 };
 d.append(diagnostic);
-d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.6.1</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
+d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.0</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
  'use strict';
  const $=id=>document.getElementById(id),modal=$('inkUpdateDialog'),status=$('inkUpdateStatus');
  const auto=$('inkUpdateAuto'),manual=$('inkUpdateInstall'),restore=$('inkRestore');

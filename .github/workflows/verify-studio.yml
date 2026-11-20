@@ -26,6 +26,7 @@ jobs:
       - run: npm install --no-save playwright@1.58.2
       - run: npx playwright install chromium
       - run: python tests/test_updates.py
+      - run: python tests/test_engine.py
       - run: node tests/browser.cjs
       - run: node tests/migration.cjs
       - run: python tools/prepare_release.py dist
@@ -45,6 +46,22 @@ jobs:
       - name: Installer le moteur sur un Windows vierge et vérifier PyTorch
         run: |
           python -c "import serveur_inkforge as s; s.install_engine(); assert (s.LOCAL_3D/'ready-v1').is_file(); s.install_engine(); import subprocess; subprocess.run([str(s.engine_python()),'-c','import torch; assert torch.version.cuda'],check=True)"
+      - name: Vérifier le dialogue avec le processus TripoSR installé sur le runner sans GPU
+        shell: python
+        run: |
+          import tempfile
+          import os, sys
+          sys.path.insert(0, os.getcwd())
+          from pathlib import Path
+          import serveur_inkforge as studio
+          with tempfile.TemporaryDirectory() as temp:
+              try:
+                  studio.warm_engine.run(Path(temp), 'preview')
+              except studio.ClientFailure as exc:
+                  assert 'CUDA indisponible' in str(exc), str(exc)
+              else:
+                  raise AssertionError('Le runner de test est prévu sans GPU')
+              assert studio.warm_engine.process is None
   release_files:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [studio, installation_windows]

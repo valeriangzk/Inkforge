@@ -63,7 +63,7 @@ class Provider(BaseHTTPRequestHandler):
         req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         assert req['n']==1
         assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
-        assert req['ratio'] in ('1:1','3:4','4:3') and 'response_format' not in req
+        assert (req['ratio']=='16:9' if req['prompt'].startswith('Panorama équirectangulaire') else req['ratio'] in ('1:1','3:4','4:3')) and 'response_format' not in req
         extra=req.get('extra_body',{})
         images=extra.get('image',[])
         assert (images and extra['response_format']=='b64_json') or req.get('return_base64') is True

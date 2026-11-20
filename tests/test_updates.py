@@ -64,15 +64,15 @@ class Updates(unittest.TestCase):
     def test_rotation_restore_and_runtime(self):
         self.app.LOCAL_3D.mkdir()
         (self.app.LOCAL_3D/'weights').write_bytes(b'keep-installed-engine')
-        self.populate('premier');self.upgrade('2.7.0')
-        second=self.populate('second');self.upgrade('2.8.0')
+        self.populate('premier');self.upgrade('2.8.0')
+        second=self.populate('second');self.upgrade('2.9.0')
         a=self.app
         with zipfile.ZipFile(a.RESCUE) as z:
             info=a.inspect_rescue(z)
-            self.assertEqual(info['version'],'2.7.0')
+            self.assertEqual(info['version'],'2.8.0')
             self.assertEqual(z.read('travail/state.json'),second)
             self.assertFalse(any(b'premier' in z.read(f) for f in z.namelist() if f.startswith('travail/')))
-        self.assertEqual(a.restore_backup()['version'],'2.7.0')
+        self.assertEqual(a.restore_backup()['version'],'2.8.0')
         restored=load(self.base)
         self.assertEqual((restored.WORK/'state.json').read_bytes(),second)
         self.assertEqual((restored.WORK/'models'/'abcdef'/'model.glb').read_bytes(),b'3D mesh second')
@@ -80,7 +80,7 @@ class Updates(unittest.TestCase):
         self.assertEqual(list(self.base.glob('*.zip')),[a.RESCUE])
 
     def test_failure_preserves_current_and_previous(self):
-        self.populate('ancien');self.upgrade('2.7.0')
+        self.populate('ancien');self.upgrade('2.8.0')
         a=self.app;work=self.populate('actif')
         old=a.RESCUE.read_bytes()
         real=os.replace
@@ -94,14 +94,14 @@ class Updates(unittest.TestCase):
                     raise OSError('simulated disk failure')
                 return real(src,dest)
             with patch.object(a.os,'replace',side_effect=fail):
-                with self.assertRaises(OSError):a.install_zip(package('2.8.0'))
+                with self.assertRaises(OSError):a.install_zip(package('2.9.0'))
             self.assertTrue(fired)
-            self.assertEqual(a.version_data()['version'],'2.7.0')
+            self.assertEqual(a.version_data()['version'],'2.8.0')
             self.assertEqual((a.WORK/'state.json').read_bytes(),work)
             self.assertEqual(a.RESCUE.read_bytes(),old)
             self.assertFalse(a.TRANSACTION.exists())
         with patch.object(a,'inspect_rescue',side_effect=ValueError('fault verifying candidate')):
-            with self.assertRaises(ValueError):a.install_zip(package('2.8.0'))
+            with self.assertRaises(ValueError):a.install_zip(package('2.9.0'))
         self.assertEqual(a.RESCUE.read_bytes(),old)
         a.RESCUE.write_bytes(b'damaged spare')
         with self.assertRaises(zipfile.BadZipFile):a.restore_backup()
@@ -116,14 +116,14 @@ class Updates(unittest.TestCase):
                 raise OSError('fault')
             return real(src,dst)
         with patch.object(a.os,'replace',side_effect=fail):
-            with self.assertRaises(OSError):a.install_zip(package('2.7.0'))
+            with self.assertRaises(OSError):a.install_zip(package('2.8.0'))
         with zipfile.ZipFile(a.RESCUE) as z:self.assertEqual(z.read('travail/state.json'),old)
         self.assertEqual((a.WORK/'state.json').read_bytes(),old)
 
     def test_interrupted_commit_recovered_at_restart(self):
-        self.populate('ancien');self.upgrade('2.7.0');a=self.app
+        self.populate('ancien');self.upgrade('2.8.0');a=self.app
         state=self.populate('actif');spare=a.RESCUE.read_bytes()
-        (self.base/'incoming.zip').write_bytes(package('2.8.0'))
+        (self.base/'incoming.zip').write_bytes(package('2.9.0'))
         program="""import os
 from pathlib import Path
 import serveur_inkforge as a
@@ -136,7 +136,7 @@ a.install_zip(Path('incoming.zip').read_bytes())"""
         proc=subprocess.run([sys.executable,'-c',program],cwd=self.base,check=False)
         self.assertEqual(proc.returncode,73)
         load(self.base).recover_transaction()
-        self.assertEqual(a.version_data()['version'],'2.7.0')
+        self.assertEqual(a.version_data()['version'],'2.8.0')
         self.assertEqual(a.RESCUE.read_bytes(),spare)
         self.assertEqual((a.WORK/'state.json').read_bytes(),state)
 
@@ -144,14 +144,14 @@ a.install_zip(Path('incoming.zip').read_bytes())"""
         a=self.app
         self.populate('ici')
         with self.assertRaises(a.ClientFailure):a.save_workspace(dict(a.EMPTY_WORK))
-        payload=package('2.7.0')
-        release={'version':'2.7.0','repo':'owner/repo','asset_id':1,'sha256':hashlib.sha256(payload).hexdigest()}
+        payload=package('2.8.0')
+        release={'version':'2.8.0','repo':'owner/repo','asset_id':1,'sha256':hashlib.sha256(payload).hexdigest()}
         with patch.object(a,'release_data',return_value=release),patch.object(a,'urlopen',side_effect=lambda *args,**opts:io.BytesIO(payload)):
             with a.working_operation():
-                with self.assertRaises(a.ClientFailure):a.auto_install('2.7.0')
-            with self.assertRaises(ValueError):a.auto_install('2.8.0')
-            self.assertEqual(a.auto_install('2.7.0'),'2.7.0')
-        self.assertEqual(a.backup_version(),'2.6.1')
+                with self.assertRaises(a.ClientFailure):a.auto_install('2.8.0')
+            with self.assertRaises(ValueError):a.auto_install('2.9.0')
+            self.assertEqual(a.auto_install('2.8.0'),'2.8.0')
+        self.assertEqual(a.backup_version(),'2.7.0')
 
 
 if __name__=='__main__':

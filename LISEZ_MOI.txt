@@ -1,4 +1,4 @@
-INKFORGE Studio 2.6.1 pour Windows
+INKFORGE Studio 2.7.0 pour Windows
 
 Lancer le studio
 Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.
@@ -6,6 +6,23 @@ Les images, planches, bibliothèques et versions de projet sont enregistrées da
 le dossier _inkforge_travail, à côté du lanceur. Garde ces fichiers ensemble.
 Tu peux aussi exporter un projet JSON avec ses images depuis le studio.
 Les clés API restent dans l’onglet ouvert.
+
+Décors panoramiques
+Dans Décors, importe une image équirectangulaire 360° au format 2:1 ou clique
+sur « Créer le panorama avec Agnes ». Cette dernière action utilise ta clé et
+peut consommer des crédits. Vérifie la continuité du lieu avant de valider.
+Les quatre boutons extraient ensuite une vue à 0°, 180°, −90° ou +90° depuis
+le même point, sur ton PC. Nuit applique une teinte atténuée au même lieu.
+« Revenir aux vues IA » donne accès au mode de génération par angle.
+
+Studio 3D
+« Aperçu 3D rapide » calcule une silhouette sur une grille de 96 points par axe.
+« Générer en qualité finale » utilise 160 points par axe et conserve le modèle
+ainsi que ses vues de référence. « Ouvrir le modèle enregistré » relit le fichier.
+Le moteur se libère après cinq minutes d’inactivité. Pour comparer les temps
+sur ton PC, génère deux modèles à partir d’images différentes. Après calcul,
+le Studio indique la durée, si le moteur était chargé et le pic mémoire PyTorch.
+Une image déjà traitée dans la même qualité peut être relue depuis le cache.
 
 Premier passage depuis la 2.4.2
 Le bouton de la 2.4.2 sait copier le programme. Pour sauvegarder aussi tes projets

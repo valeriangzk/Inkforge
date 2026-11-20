@@ -32,7 +32,7 @@ async function key(p){
  await p.locator('#apiSecret').fill('test-secret-never-save');
  await p.locator('#addApiKey').click();await p.locator('#apiToggle').click();
 }
-async function validateReference(p,trigger,subject,angle){
+async function validateReference(p,trigger,subject,angle,providerCalls=1){
  const metrics=path.join(folder,'metrics.jsonl');
  const countCalls=()=>fs.existsSync(metrics)?fs.readFileSync(metrics,'utf8').trim().split('\n').length:0;
  const before=countCalls();
@@ -44,7 +44,7 @@ async function validateReference(p,trigger,subject,angle){
   await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
   assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
   assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
-  assert.equal(countCalls(),before+1,'Un POST de génération Agnes par clic');
+  assert.equal(countCalls(),before+providerCalls,'Nombre exact de générations Agnes');
   assert.equal(await dialog.locator('img:visible').count(),1);
   const preview=await dialog.locator('#aiDialogImage').getAttribute('src');
   if(!angle.startsWith('Vue ')){
@@ -193,6 +193,8 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.ok(await p.locator('#studioBuild').isDisabled());
+  await p.locator('[data-tab=places]').click();await p.getByRole('button',{name:'Revenir aux vues IA'}).click();
+  await p.locator('[data-tab=studio3d]').click();
   await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue principale');
   assert.ok(await p.locator('#studioBuild').isEnabled());
   await p.locator('[data-tab=places]').click();
@@ -282,6 +284,56 @@ async function generate(p,prompt,accept=true){
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),placeViews);
   assert.equal(await p.evaluate(()=>project.places[0].references.length),2);
+  await p.locator('[data-tab=places]').click();
+  await key(p);
+  await p.getByRole('button',{name:'Créer le panorama avec Agnes'}).click();
+  await p.waitForFunction(()=>!aiBusy);
+  assert.ok((await p.locator('#aiDialogTitle').textContent()).includes('Panorama 360°'));
+  await p.locator('#aiAcceptImage').click();await saved(p);
+  assert.ok(await p.evaluate(()=>project.places[0].panorama.startsWith('/media/')));
+  // Cardinal landmarks around a single equirectangular raster, with the rear wall across its seam.
+  const panorama=await p.evaluate(()=>{
+   const c=document.createElement('canvas');c.width=1024;c.height=512;
+   const ctx=c.getContext('2d');
+   for(const [x,w,color] of [[0,128,'#cc2200'],[128,256,'#00bb22'],[384,256,'#2233ee'],[640,256,'#ffcc00'],[896,128,'#cc2200']]){
+    ctx.fillStyle=color;ctx.fillRect(x,0,w,512);
+   }
+   return c.toDataURL().split(',')[1];
+  });
+  const oldPanorama=await p.evaluate(()=>project.places[0].panorama);
+  await p.locator('#placeGrid input[type=file]').setInputFiles({name:'sphere.png',mimeType:'image/png',buffer:Buffer.from(panorama,'base64')});
+  await p.waitForFunction(old=>project.places[0].panorama!==old,oldPanorama);await saved(p);
+  await p.reload();await p.waitForFunction(()=>workspaceReady);
+  await p.locator('[data-tab=places]').click();
+  for(const light of ['day','night']){
+   await p.locator('#placeGrid select').selectOption(light);
+   for(const [angle,label] of Object.entries(labels)){
+    const old=await p.evaluate(()=>project.places[0].placeViews);
+    const url=await validateReference(p,p.getByRole('button',{name:'Régénérer · '+label,exact:true}),'Lieu de vérification',label,0);
+    const rgb=await p.evaluate(async uri=>{
+     const img=new Image();img.src=uri;await img.decode();
+     const c=document.createElement('canvas'),ctx=c.getContext('2d');ctx.drawImage(img,-480,-360);
+     return [...ctx.getImageData(0,0,1,1).data].slice(0,3);
+    },url);
+    const expected={main:[34,51,238],left:[0,187,34],right:[255,204,0],opposite:[204,34,0]}[angle];
+    assert.deepEqual(rgb,expected.map((n,c)=>Math.round(n*(light==='day'?1:[.34,.43,.62][c]))));
+    assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{...old,[light]:{...old[light],[angle]:url}});
+   }
+  }
+  await p.locator('[data-tab=studio3d]').click();await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
+  await p.route('**/3d/status',r=>r.fulfill({json:{ready:true}}));
+  const qualities=[],modelId='1'.repeat(64);
+  await p.route('**/3d/build',r=>{qualities.push(r.request().postDataJSON().quality);return r.fulfill({json:{id:modelId,cold:true,seconds:1,gpu_mib:100}})});
+  await p.route('**/3d/models/*',r=>r.fulfill({body:'test-model'}));
+  await p.evaluate(()=>{if(!customElements.get('model-viewer'))customElements.define('model-viewer',class extends HTMLElement{})});
+  await p.locator('#studioPreview').click();await p.waitForFunction(()=>document.querySelector('#studioProgress').hidden);
+  assert.ok(await p.locator('#modelArea model-viewer[camera-controls]').count());
+  assert.equal(await p.evaluate(()=>project.places[0].model3d),undefined);
+  await p.locator('#studioBuild').click();await p.waitForFunction(()=>document.querySelector('#studioProgress').hidden);
+  assert.equal(await p.evaluate(()=>project.places[0].model3d),modelId);
+  await p.locator('#studioOpen').click();await p.waitForFunction(()=>document.querySelector('#studioProgress').hidden);
+  assert.deepEqual(qualities,['preview','final']);
+  console.log('PASS panorama local, huit orientations/éclairages, aperçu 3D, qualité finale et réouverture sans reconstruction.');
   console.log('PASS quatre vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
   console.log('PASS génération sans sélection et avec bibliothèques, deux échecs, insertion, export/import, historique, fermeture et réouverture');
  } finally{await browser?.close();if(server)await stop();fs.rmSync(tmp,{recursive:true,force:true,maxRetries:6,retryDelay:150})}
