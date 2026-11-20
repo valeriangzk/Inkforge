@@ -351,7 +351,7 @@ def run_engine(folder=None):
     from huggingface_hub import hf_hub_download
     # TripoSR expects X,Y,Z vertices from torchmcubes; skimage returns array-axis order.
     def surface(volume, level):
-        verts, faces, _, _ = marching_cubes(volume.detach().cpu().numpy(), level)
+        verts, faces, _, _ = marching_cubes(volume.detach().cpu().numpy(), level, gradient_direction='ascent')
         return torch.from_numpy(verts[:, ::-1].copy()), torch.from_numpy(faces.copy().astype('int64'))
     adapter = types.ModuleType('torchmcubes')
     adapter.marching_cubes = surface
