@@ -420,7 +420,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/INKFORGE.html"):
-            self.send_data(200, HTML.read_bytes(), "text/html; charset=utf-8")
+            version = version_data()['version']
+            html = re.sub(rb'(<meta name="inkforge-version" content=")[^"]*', lambda match: match[1]+version.encode('ascii'), HTML.read_bytes(), count=1)
+            self.send_data(200, html, "text/html; charset=utf-8")
         elif self.path == "/updates/status":
             self.send_data(200, update_status())
         elif self.path == '/3d/status':

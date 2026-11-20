@@ -1,4 +1,4 @@
-INKFORGE Studio 2.4.0 pour Windows
+INKFORGE Studio 2.4.1 pour Windows
 
 Démarrage
 1. Python 3 doit être installé.
