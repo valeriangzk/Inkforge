@@ -100,8 +100,17 @@ async function generate(p,prompt,accept=true){
   await p.locator('[data-tab=places]').click();
   await p.locator('#addPlace').click();
   await p.getByLabel('Nom du décor').fill('Lieu de vérification');
-  await p.getByLabel('Description détaillée du lieu').fill('Façade en briques');
+  const descriptions={main:'Façade en briques',left:'Étagère en cuivre',right:'Fenêtre en ogive',opposite:'Horloge murale'};
+  for(const [key,text] of Object.entries(descriptions))if(key!=='left')await p.locator('#placeText-'+key).fill(text);
   assert.ok(await p.locator('#memoryClothing').isHidden());
+  await p.locator('#memorySave').click();await saved(p);
+  const beforeMissing=fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8');
+  await p.getByRole('button',{name:'Générer · Vue de gauche',exact:true}).click();
+  assert.equal(await p.locator('#aiDialogTitle').textContent(),'Description à compléter');
+  assert.equal(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8'),beforeMissing);
+  await p.locator('#aiCloseDialog').click();
+  await p.getByRole('button',{name:'Ouvrir la fiche'}).click();
+  await p.locator('#placeText-left').fill(descriptions.left);
   await p.locator('#memorySave').click();await saved(p);
   await p.locator('[data-tab=ai]').click();await p.locator('#listAgnesModels').click();
   await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
@@ -193,16 +202,16 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.ok(await p.locator('#studioBuild').isDisabled());
-  await p.locator('[data-tab=places]').click();await p.getByRole('button',{name:'Revenir aux vues IA'}).click();
+
   await p.locator('[data-tab=studio3d]').click();
-  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue principale');
+  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue de face');
   assert.ok(await p.locator('#studioBuild').isEnabled());
   await p.locator('[data-tab=places]').click();
   await p.locator('#placeGrid').getByRole('button',{name:'Ouvrir la fiche'}).click();
   await p.locator('#memoryFiles').setInputFiles([0,1].map(i=>path.join(folder,'reference'+i+'.png')));
   await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('2 '));
   await p.locator('#memorySave').click();await saved(p);
-  const labels={main:'Vue principale',opposite:'Vue opposée',left:'Vue gauche',right:'Vue droite'};
+  const labels={main:'Vue de face',opposite:'Vue opposée',left:'Vue de gauche',right:'Vue de droite'};
   for(const light of ['day','night']){
    await p.locator('#placeGrid select').selectOption(light);
    for(const [key,label] of Object.entries(labels)){
@@ -211,7 +220,8 @@ async function generate(p,prompt,accept=true){
     const preview=await validateReference(p,trigger,'Lieu de vérification',label);
     const call=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
     assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
-    assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
+    assert.ok(call.refs>0);
+    for(const [direction,text] of Object.entries(descriptions))assert.equal(call.prompt.includes(text),direction===key);
     const colors={main:[180,30,30],opposite:[30,170,30],left:[40,40,180],right:[190,160,30]};
     const shown=await p.evaluate(async url=>{
      const image=new Image();image.src=url;await image.decode();
@@ -220,7 +230,7 @@ async function generate(p,prompt,accept=true){
     },preview);
     assert.deepEqual(shown,colors[key].map(v=>light==='night'?Math.floor(v/2):v));
     if(light==='day'&&key!=='main'){
-     assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue principale (jour)'));
+     assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue de face (jour)'));
      assert.ok(call.prompt.includes('nouvelle composition')&&!call.prompt.includes('Reprends le cadrage'));
     }
     if(light==='night')assert.ok(call.prompt.includes('Image 1 : '+label+' (jour)'));
@@ -246,7 +256,7 @@ async function generate(p,prompt,accept=true){
   },beforeEcho.day.main);
   for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
-   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue de gauche'}).click();
    await p.waitForFunction(()=>!aiBusy);
    assert.ok(await p.locator('#aiAcceptImage').isHidden());
    assert.match(await p.locator('#aiDialogStep').textContent(),/copie exacte|reproduit une référence|même image/);
@@ -270,7 +280,7 @@ async function generate(p,prompt,accept=true){
   assert.ok(report.includes('demandes différentes, fichier identique reçu'));
   await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
-  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue de gauche'}).click();
   await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
@@ -291,6 +301,16 @@ async function generate(p,prompt,accept=true){
   assert.ok((await p.locator('#aiDialogTitle').textContent()).includes('Panorama 360°'));
   await p.locator('#aiAcceptImage').click();await saved(p);
   assert.ok(await p.evaluate(()=>project.places[0].panorama.startsWith('/media/')));
+  await p.getByRole('button',{name:'Ouvrir la fiche'}).click();
+  const revised='Arcade de mosaïque';
+  await p.locator('#placeText-right').fill(revised);
+  await p.locator('#memorySave').click();await saved(p);
+  const beforeRevision=await p.evaluate(()=>project.places[0].placeViews);
+  const newRight=await validateReference(p,p.getByRole('button',{name:'Régénérer · Vue de droite',exact:true}),'Lieu de vérification','Vue de droite');
+  const revisedCall=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
+  assert.ok(revisedCall.prompt.includes(revised)&&Object.values(descriptions).every(text=>!revisedCall.prompt.includes(text)));
+  assert.notEqual(newRight,beforeRevision.night.right);
+  assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{...beforeRevision,night:{...beforeRevision.night,right:newRight}});
   // Cardinal landmarks around a single equirectangular raster, with the rear wall across its seam.
   const panorama=await p.evaluate(()=>{
    const c=document.createElement('canvas');c.width=1024;c.height=512;
@@ -309,7 +329,7 @@ async function generate(p,prompt,accept=true){
    await p.locator('#placeGrid select').selectOption(light);
    for(const [angle,label] of Object.entries(labels)){
     const old=await p.evaluate(()=>project.places[0].placeViews);
-    const url=await validateReference(p,p.getByRole('button',{name:'Régénérer · '+label,exact:true}),'Lieu de vérification',label,0);
+    const url=await validateReference(p,p.getByRole('button',{name:'Cadrer le panorama · '+label,exact:true}),'Lieu de vérification',label,0);
     const rgb=await p.evaluate(async uri=>{
      const img=new Image();img.src=uri;await img.decode();
      const c=document.createElement('canvas'),ctx=c.getContext('2d');ctx.drawImage(img,-480,-360);

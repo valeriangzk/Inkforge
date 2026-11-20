@@ -151,7 +151,7 @@ a.install_zip(Path('incoming.zip').read_bytes())"""
                 with self.assertRaises(a.ClientFailure):a.auto_install('2.8.0')
             with self.assertRaises(ValueError):a.auto_install('2.9.0')
             self.assertEqual(a.auto_install('2.8.0'),'2.8.0')
-        self.assertEqual(a.backup_version(),'2.7.0')
+        self.assertEqual(a.backup_version(),'2.7.1')
 
 
 if __name__=='__main__':
