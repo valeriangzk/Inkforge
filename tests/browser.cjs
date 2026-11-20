@@ -35,7 +35,8 @@ async function key(p){
 async function openLastResult(p){
  const row=p.locator('#generationRows > div').first();
  await row.getByRole('button',{name:/Voir le résultat|Voir l’erreur/}).click({timeout:90000});
- await p.locator('#aiDialogImage:visible').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
+ await p.locator('#aiProgressDialog').waitFor({state:'visible'});
+ await p.waitForFunction(()=>!document.getElementById('aiAcceptImage').disabled||document.getElementById('aiAcceptImage').style.display==='none');
 }
 async function validateReference(p,trigger,subject,angle,providerCalls=1){
  const metrics=path.join(folder,'metrics.jsonl');
