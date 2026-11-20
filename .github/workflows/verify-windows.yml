@@ -1,0 +1,25 @@
+name: Vérification Windows 2.4.0
+on: push
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install chromium
+      - run: node verification/test.cjs verification/baseline
+      - name: Installer le moteur TripoSR sur Windows
+        run: python -c "import serveur_inkforge as app; app.install_engine()"
+      - name: Joindre les fichiers au brouillon GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v2.4.0 verification/inkforge-update.zip verification/inkforge-update.json --clobber
