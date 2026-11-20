@@ -50,6 +50,7 @@ async function generate(p,prompt,accept=true){
   await p.locator('#memoryFiles').setInputFiles(Array.from({length:5},(_,i)=>path.join(folder,'reference'+i+'.png')));
   await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('5 '));
   await p.locator('#memorySave').click();await saved(p);await key(p);
+  await p.route('**/ai/result',r=>r.abort('connectionreset'),{times:1});
   await p.getByRole('button',{name:'Générer la référence',exact:true}).click();await p.waitForFunction(()=>!aiBusy);
   assert.equal(await p.locator('#aiDialogTitle').textContent(),'Référence de Sujet de vérification');
   assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth===960));
@@ -65,7 +66,11 @@ async function generate(p,prompt,accept=true){
   const original=await p.evaluate(()=>current().img);
   await p.locator('#aiCharacter').selectOption({label:'Sujet de vérification'});
   await p.locator('#aiPlace').selectOption({label:'Lieu de vérification'});
-  await generate(p,'Scène avec personnage et décor');
+  await generate(p,'Scène avec personnage et décor',false);
+  await p.route('**/work/save',r=>r.fulfill({status:507,contentType:'application/json',body:JSON.stringify({error:'Disque plein pendant le test.'})}),{times:1});
+  await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>document.querySelector('#aiDialogTitle').textContent==='Image non enregistrée');
+  assert.equal(await p.evaluate(()=>current().img),original);
+  await p.getByRole('button',{name:'Réessayer l’enregistrement'}).click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
   const scene=await p.evaluate(()=>current().img);assert.notEqual(original,scene);
   for(const prompt of ['image-incomplete','quota-fournisseur']){
     await generate(p,prompt,false);assert.ok((await p.locator('#aiDialogStep').textContent()).includes('conservée'));

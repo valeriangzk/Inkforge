@@ -745,10 +745,18 @@ def bootstrap_workspace(data):
         marker = WORK / 'migration.json'
         if not marker.exists():
             models = LOCAL_3D/'models'
-            with tempfile.TemporaryDirectory(dir=BASE) as tmp:
-                archive = Path(tmp)/'secours.zip'
-                create_rescue(archive, LEGACY_BACKUP, None, browser, models)
-                os.replace(archive, RESCUE)
+            if backup_version()==previous:
+                # A power cut may have happened after replacement and before the marker.
+                with zipfile.ZipFile(RESCUE) as saved:
+                    inspect_rescue(saved)
+                    existing=json.loads(saved.read('navigateur.json'))
+                if not all(existing.get(k)==v for k,v in browser.items()):
+                    raise ClientFailure('Le projet du navigateur diffère de la sauvegarde. Rouvre le profil utilisé pour la mise à jour.')
+            else:
+                with tempfile.TemporaryDirectory(dir=BASE) as tmp:
+                    archive=Path(tmp)/'secours.zip'
+                    create_rescue(archive,LEGACY_BACKUP,None,browser,models)
+                    os.replace(archive,RESCUE)
             write_atomic(marker,json_bytes({'previous':previous}))
         # A validated rescue now exists. Retry this housekeeping on a later launch if necessary.
         if backup_version() != previous:

@@ -48,7 +48,7 @@ cmd = r'''@echo off
 setlocal
 set "INKFORGE_ASSISTANT_SOURCE=%~f0"
 set "INKFORGE_ASSISTANT_TEMP=%TEMP%\inkforge-migration-%RANDOM%-%RANDOM%.pyz"
-powershell -NoProfile -Command "$s=[IO.File]::ReadAllText($env:INKFORGE_ASSISTANT_SOURCE);[IO.File]::WriteAllBytes($env:INKFORGE_ASSISTANT_TEMP,[Convert]::FromBase64String($s.Substring($s.LastIndexOf('#INKFORGE#')+9).Trim()))"
+powershell -NoProfile -Command "$tag='#INKFORGE#';$s=[IO.File]::ReadAllText($env:INKFORGE_ASSISTANT_SOURCE);[IO.File]::WriteAllBytes($env:INKFORGE_ASSISTANT_TEMP,[Convert]::FromBase64String($s.Substring($s.LastIndexOf($tag)+$tag.Length).Trim()))"
 if errorlevel 1 goto :failed
 where py >nul 2>nul
 if errorlevel 1 (python "%INKFORGE_ASSISTANT_TEMP%" %*) else (py -3 "%INKFORGE_ASSISTANT_TEMP%" %*)

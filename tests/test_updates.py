@@ -36,7 +36,7 @@ class Updates(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.base=Path(self.tmp.name)
+        self.base=Path(self.tmp.name).resolve()
         for name in FILES:shutil.copy2(ROOT/name,self.base/name)
         self.app=load(self.base)
 

@@ -176,7 +176,11 @@ function renderLibrary(type){const grid=$(type==='characters'?'characterGrid':'p
 $('titleInput').onchange=e=>change(()=>project.title=e.target.value.trim()||'Sans titre');$('chapterInput').onchange=e=>change(()=>project.chapter=Math.max(1,Number(e.target.value)||1));$('newProject').onclick=()=>{if(confirm('Créer un nouveau projet vierge ? Le projet actuel restera sauvegardé localement.')){project=fresh();history=[];future=[];page=0;selected=0;persist();renderAll();renderProjects()}};function activateProject(id){let s=loadStore();if(!s[id])return;project=s[id];history=[];future=[];page=0;selected=0;persist();renderAll();renderProjects()}function renderProjects(){const s=loadStore();$('projectList').innerHTML='';Object.values(s).sort((a,b)=>b.updated-a.updated).forEach(p=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<h3>${safeText(p.title)}</h3><p class="help">${p.pages?.length||0} page(s) • ${new Date(p.updated).toLocaleString('fr-FR')}</p><div class="toolbar"><button class="btn" data-open>Ouvrir</button><button class="btn" data-delete>Supprimer</button></div>`;d.querySelector('[data-open]').onclick=()=>activateProject(p.id);d.querySelector('[data-delete]').onclick=()=>{if(confirm('Supprimer ce projet local ?')){delete s[p.id];delete workspace.histories[p.id];if(p.id!==project.id)saveState();if(p.id===project.id){project=Object.values(s)[0]||fresh();workspace.active=s[project.id]?project.id:'';saveState();renderAll()}renderProjects()}};$('projectList').append(d)});renderVersions()}function renderVersions(){const list=(workspace.histories[project.id]||[]);$('versionList').innerHTML='';list.forEach((v,i)=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<h3>Version ${list.length-i}</h3><p class="help">${new Date(v.time).toLocaleString('fr-FR')}</p><button class="btn">Restaurer</button>`;d.querySelector('button').onclick=()=>{if(confirm('Restaurer cette version ?')){commit();project=clone(v.project);persist();renderAll();renderProjects()}};$('versionList').append(d)})}$('saveVersion').onclick=async()=>{try{let list=(workspace.histories[project.id]||[]);list.unshift({time:Date.now(),project:clone(project)});workspace.histories[project.id]=list.slice(0,8);await persist(true);renderVersions();notify('Version enregistrée')}catch(e){notify('Version non enregistrée. '+e.message)}};$('importJSON').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.pages)||!Array.isArray(data.characters)||!Array.isArray(data.places))throw Error('Format de projet incompatible');project={...await translateProject(data,false),id:uid(),updated:Date.now()};page=0;selected=0;history=[];future=[];await persist(true);renderAll();renderProjects();notify('Projet importé')}catch(err){notify('Import impossible : '+err.message)}e.target.value=''};
 function renderAIOptions(){for(const [id,items] of [['aiCharacter',project.characters],['aiPlace',project.places]]){const el=$(id),old=el.value;el.innerHTML='<option value="">Aucun</option>';items.forEach(item=>{let o=document.createElement('option');o.value=item.id;o.textContent=item.name;el.append(o)});el.value=old}}const aiFetch=postJSON;
 async function referenceForAgnes(source){
- const image=new Image();image.src=source;
+ if(typeof source==='string' && source.startsWith('https://')){
+  const u=new URL(source);
+  if(['platform-outputs.agnes-ai.space','apihub.agnes-ai.com'].includes(u.hostname)||(u.hostname==='storage.googleapis.com'&&u.pathname.startsWith('/agnes-aigc/')))return source;
+ }
+ const image=new Image();image.crossOrigin='anonymous';image.src=source;
  try{await image.decode()}catch{throw Error('Une image de la fiche est introuvable ou illisible. Ouvre la mémoire et remplace-la.')}
  let edge=Math.min(1024,Math.max(image.naturalWidth,image.naturalHeight));
  while(edge>=64){
@@ -309,7 +313,10 @@ aiAccept.onclick=async()=>{
    const previous=clone(project);
    character.portrait=saved.image;
    delete character.model3d;
-   try{await persist(true)}catch(e){workspace.projects[previous.id]=project=previous;return showAi('Référence non enregistrée',e.message)}
+   try{await persist(true)}catch(e){
+    workspace.projects[previous.id]=project=previous;aiPending=saved;
+    showAi('Référence non enregistrée',e.message,saved.image);aiAccept.textContent='Réessayer l’enregistrement';return;
+   }
    history.push(previous);if(history.length>60)history.shift();future=[];
    aiPending=null;aiDialog.style.display='none';renderAll();notify('Référence enregistrée dans la fiche');
    return;
@@ -320,8 +327,8 @@ aiAccept.onclick=async()=>{
  frame.img=saved.image;
  try{await persist(true)}catch(e){
    workspace.projects[previous.id]=project=previous;
-   showAi('Image non enregistrée','La case précédente est conservée. '+e.message);
-   aiPending=null;
+   aiPending=saved;showAi('Image non enregistrée','La case précédente est conservée. '+e.message,saved.image);
+   aiAccept.textContent='Réessayer l’enregistrement';
    return;
  }
  history.push(previous);if(history.length>60)history.shift();future=[];
