@@ -4,12 +4,17 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=r
 const {once}=require('node:events');
 const repo=path.resolve(__dirname,'..'),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'inkforge-migration-'));
 const python=process.env.PYTHON||'python',dist=path.join(tmp,'dist');
+// Playwright owns the browser in this test. Avoid opening a second Edge profile
+// through the genuine Windows launcher and leaving it running after the test.
+const control=path.join(tmp,'test-browser');
+fs.mkdirSync(control);fs.writeFileSync(path.join(control,'sitecustomize.py'),'import webbrowser\nwebbrowser.open = lambda *args, **kwargs: True\n');
+
 const url='http://127.0.0.1:'+(process.env.INKFORGE_MIGRATION_PORT||(process.platform==='win32'?8765:18766));
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let server,closed,context;
 async function stop(){if(!server)return;if(server.exitCode===null&&!server.killed)server.kill();await closed;server=null}
 async function start(folder,mode){
- const env={...process.env,LOCALAPPDATA:path.join(folder,'test-local'),INKFORGE_MIGRATION_PORT:new URL(url).port};
+ const env={...process.env,PYTHONPATH:[control,process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),LOCALAPPDATA:path.join(folder,'test-local'),INKFORGE_MIGRATION_PORT:new URL(url).port};
  if(process.platform==='win32'&&mode!=='studio'){
   const assistant=mode==='prepare';
   const cmd=assistant?'MISE_A_JOUR_INKFORGE.cmd':'RESTAURER_INKFORGE.cmd';
