@@ -2,6 +2,7 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import subprocess, sys
 import json, webbrowser, threading, time, socket, zipfile, io, os, shutil, tempfile, re, hashlib, base64, mimetypes
 from urllib.request import build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
@@ -188,7 +189,15 @@ def describe_reference(entity,which):
     refs=[]
     sources=list(entity.get('references') or []) if isinstance(entity.get('references'),list) else []
     if not sources and entity.get('img'):sources=[entity['img']]
-    for image in sources[:4]:
+    if entity.get('portrait'):
+        sources.insert(0, entity['portrait'])
+    ident=entity.get('model3d')
+    if isinstance(ident,str) and re.fullmatch('[a-f0-9]{64}',ident):
+        for index in (0,1,2):
+            view=LOCAL_3D/'models'/ident/f'view-{index}.jpg'
+            if view.is_file():
+                refs.append(base64.b64encode(view.read_bytes()).decode('ascii'))
+    for image in sources[:max(0,4-len(refs))]:
         if not isinstance(image,str):continue
         if re.fullmatch(r'data:image/(?:png|jpe?g|webp);base64,[A-Za-z0-9+/=]+',image,re.I):
             b64=image.split(',',1)[1]
@@ -287,6 +296,113 @@ def send_generate(payload,key):
     image=local_image(record)
     return {'image':image,'references_used':len(refs[:5]),'model':model}
 
+# Keep the optional GPU environment and user-created models across studio updates.
+LOCAL_3D = Path(os.getenv('LOCALAPPDATA') or Path.home() / '.local' / 'share') / 'INKFORGE' / 'TripoSR'
+GPU_LOCK = threading.Lock()
+SOURCE_REV = '107cefdc244c39106fa830359024f6a2f1c78871'
+WEIGHTS_REV = '5b521936b01fbe1890f6f9baed0254ab6351c04a'
+
+
+def engine_python():
+    return LOCAL_3D / 'runtime-v1' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+
+
+def install_engine():
+    if os.name != 'nt':
+        raise ClientFailure('L’installation automatique TripoSR est prévue pour Windows.')
+    if (LOCAL_3D / 'ready-v1').is_file() and engine_python().is_file():
+        return
+    LOCAL_3D.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, '-m', 'venv', str(LOCAL_3D / 'bootstrap')], check=True)
+    scripts = LOCAL_3D / 'bootstrap' / 'Scripts'
+    subprocess.run([str(scripts / 'python'), '-m', 'pip', 'install', 'uv==0.8.22'], check=True)
+    uv = str(scripts / 'uv.exe')
+    subprocess.run([uv,'python','install','3.11'],check=True)
+    if not engine_python().exists():
+        subprocess.run([uv,'venv','--python','3.11',str(engine_python().parents[1])],check=True)
+    pip = [uv,'pip','install','--python',str(engine_python())]
+    subprocess.run(pip+['--index-url','https://download.pytorch.org/whl/cu124','torch==2.6.0'],check=True)
+    subprocess.run(pip+['numpy==1.26.4','opencv-python-headless==4.10.0.84','scikit-image==0.24.0',
+        'transformers==4.35.0','omegaconf==2.3.0','einops==0.7.0','trimesh==4.0.5',
+        'rembg==2.0.61','onnxruntime==1.20.1','imageio==2.36.1','pillow==10.4.0'],check=True)
+    url = 'https://api.github.com/repos/VAST-AI-Research/TripoSR/zipball/' + SOURCE_REV
+    with urlopen(Request(url, headers={'User-Agent':'INKFORGE'}),timeout=120) as response:
+        data = response.read(64_000_001)
+    if hashlib.sha256(data).hexdigest() != 'a3db2d0d01c543611395a290029de1984b1cc6694f75440617bb87a7da1395d8':
+        raise ClientFailure('La vérification du téléchargement TripoSR a échoué.')
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        for name in archive.namelist():
+            relative = Path(*Path(name).parts[1:])
+            if relative.parts and (relative.parts[0]=='tsr' or relative.name=='LICENSE') and not name.endswith('/'):
+                target = LOCAL_3D / 'source' / relative
+                target.parent.mkdir(parents=True,exist_ok=True)
+                target.write_bytes(archive.read(name))
+    subprocess.run([str(engine_python()),str(Path(__file__).resolve()),'--check-3d'],check=True)
+    (LOCAL_3D / 'ready-v1').touch()
+
+
+def run_engine(folder=None):
+    import types
+    import numpy as np
+    import torch
+    from skimage.measure import marching_cubes
+    from PIL import Image
+    import rembg
+    from huggingface_hub import hf_hub_download
+    # TripoSR expects X,Y,Z vertices from torchmcubes; skimage returns array-axis order.
+    def surface(volume, level):
+        verts, faces, _, _ = marching_cubes(volume.detach().cpu().numpy(), level)
+        return torch.from_numpy(verts[:, ::-1].copy()), torch.from_numpy(faces.copy().astype('int64'))
+    adapter = types.ModuleType('torchmcubes')
+    adapter.marching_cubes = surface
+    sys.modules['torchmcubes'] = adapter
+    sys.path.insert(0,str(LOCAL_3D / 'source'))
+    from tsr.system import TSR
+    from tsr.utils import remove_background, resize_foreground
+    if folder is None:
+        return
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA indisponible. Mets à jour le pilote NVIDIA puis relance INKFORGE.')
+    for name in ('config.yaml','model.ckpt'):
+        path = hf_hub_download('stabilityai/TripoSR',name,revision=WEIGHTS_REV)
+    model = TSR.from_pretrained(str(Path(path).parent),'config.yaml','model.ckpt').eval().to('cuda')
+    model.renderer.set_chunk_size(2048)
+    image = remove_background(Image.open(folder/'input').convert('RGBA'),rembg.new_session('u2netp',providers=['CPUExecutionProvider']))
+    image = resize_foreground(image,0.85)
+    bg = Image.new('RGB',image.size,(128,128,128))
+    bg.paste(image,mask=image.getchannel('A'))
+    with torch.inference_mode():
+        scene = model([bg],device='cuda')
+        mesh = model.extract_mesh(scene,True,resolution=160)[0]
+        mesh.export(str(folder/'model.glb'))
+        for i, view in enumerate(model.render(scene,4,height=256,width=256)[0]):
+            view.convert('RGB').save(folder/f'view-{i}.jpg',quality=88)
+
+
+def build_character_model(payload):
+    image = payload.get('image')
+    if not isinstance(image,str) or not re.fullmatch(r'data:image/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+',image):
+        raise ClientFailure('Enregistre une référence PNG, JPEG ou WebP dans la fiche.')
+    data = base64.b64decode(image.split(',',1)[1],validate=True)
+    ident = hashlib.sha256(data).hexdigest()
+    models = LOCAL_3D / 'models'
+    target = models / ident
+    if not (target/'model.glb').exists():
+        if not (LOCAL_3D/'ready-v1').is_file():
+            raise ClientFailure('Installe le moteur TripoSR dans le Studio 3D.')
+        models.mkdir(parents=True,exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=models) as temporary:
+            stage = Path(temporary)/'result'
+            stage.mkdir()
+            (stage/'input').write_bytes(data)
+            result = subprocess.run([str(engine_python()),str(Path(__file__).resolve()),'--build-3d',str(stage)],check=False)
+            if result.returncode:
+                raise ClientFailure('Reconstruction interrompue. Consulte la fenêtre noire pour le détail (pilote NVIDIA, téléchargement ou mémoire disponible).')
+            (stage/'input').unlink()
+            stage.rename(target)
+    return {'id':ident}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # Do not log API keys or request bodies.
@@ -307,12 +423,40 @@ class Handler(BaseHTTPRequestHandler):
             self.send_data(200, HTML.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/updates/status":
             self.send_data(200, update_status())
+        elif self.path == '/3d/status':
+            self.send_data(200,{'ready':(LOCAL_3D/'ready-v1').is_file() and engine_python().is_file()})
+        elif re.fullmatch(r'/3d/models/[a-f0-9]{64}',self.path):
+            model=LOCAL_3D/'models'/self.path.rsplit('/',1)[1]/'model.glb'
+            if model.is_file():
+                self.send_data(200,model.read_bytes(),'model/gltf-binary')
+            else:
+                self.send_data(404,{'error':'Modèle absent sur ce PC.'})
         elif self.path == "/health":
             self.send_data(200, {"configured": True, "status": "running"})
         else:
             self.send_data(404, {"error": "Page introuvable"})
 
     def do_POST(self):
+        if self.path in ('/3d/install','/3d/build'):
+            try:
+                require_same_origin(self.headers)
+                size=int(self.headers.get('Content-Length',0))
+                if not 0<size<12_000_000 or self.headers.get_content_type()!='application/json':
+                    raise ClientFailure('Demande 3D invalide.')
+                payload=json.loads(self.rfile.read(size))
+                if not isinstance(payload,dict):raise ClientFailure('Demande 3D invalide.')
+                if not GPU_LOCK.acquire(blocking=False):raise ClientFailure('Une opération 3D est déjà en cours.',409)
+                try:
+                    if self.path=='/3d/install':
+                        install_engine()
+                        return self.send_data(200,{'ready':True})
+                    return self.send_data(200,build_character_model(payload))
+                finally:
+                    GPU_LOCK.release()
+            except ClientFailure as exc:return self.send_data(exc.status,{'error':str(exc)})
+            except (ValueError,OSError,subprocess.SubprocessError) as exc:
+                print('Erreur moteur 3D :',exc)
+                return self.send_data(400,{'error':'Opération 3D interrompue. Consulte la fenêtre noire pour le détail puis réessaie.'})
         if self.path in ('/ai/models','/ai/check','/ai/generate'):
             try:
                 payload,key=parse_small_json(self)
@@ -403,6 +547,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_data(400, {"connected": None, "reason": "Requête invalide"})
 
 if __name__ == "__main__":
+    if sys.argv[1:2] in (['--check-3d'],['--build-3d']):
+        run_engine(Path(sys.argv[2]) if len(sys.argv)>2 else None)
+        sys.exit(0)
     try:
         server = ThreadingHTTPServer((HOST, PORT), Handler)
     except OSError:
