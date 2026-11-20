@@ -46,6 +46,7 @@ async function validateReference(p,trigger,subject,angle){
    const request=JSON.parse(fs.readFileSync(path.join(folder,'views.jsonl'),'utf8').trim().split('\n').pop());
    const cues={'Face':'Les deux épaules','Profil gauche':'bord gauche','Profil droit':'bord droit','Dos':'Le visage entier est caché'};
    assert.ok(request.prompt.startsWith('Angle demandé — '+angle+'.')&&request.prompt.includes(cues[angle]));
+   assert.equal(request.prompt.includes('Si des mèches longues sont libres'),angle==='Dos');
    if(angle!=='Face')assert.equal(request.refs,1);
    assert.equal(preview,'/media/'+request.sha+'.png');
    const raster=await dialog.locator('#aiDialogImage').evaluate(img=>{
@@ -147,6 +148,21 @@ async function generate(p,prompt,accept=true){
    const preview=await validateReference(p,p.getByRole('button',{name:'Régénérer · '+label,exact:true}),'Sujet de vérification',label);
    assert.notEqual(before[angle],preview);
    assert.deepEqual(await p.evaluate(()=>project.characters[0].views),{...before,[angle]:preview});
+  }
+  for(const [appearance,clothing,accessories] of [
+   ['Cheveux longs cuivrés et ondulés, libres jusqu’à la taille','Veste en jean','Boucles d’oreilles'],
+   ['Cheveux argentés en chignon','Manteau à capuche relevée','Épingle noire']
+  ]){
+   await p.getByRole('button',{name:'Ouvrir la mémoire'}).click();
+   await p.locator('#memoryAppearance').fill(appearance);
+   await p.locator('#memoryClothing').fill(clothing);
+   await p.locator('#memoryAccessories').fill(accessories);
+   await p.locator('#memorySave').click();await saved(p);
+   await validateReference(p,p.getByRole('button',{name:'Régénérer · Dos'}),'Sujet de vérification','Dos');
+   const request=JSON.parse(fs.readFileSync(path.join(folder,'views.jsonl'),'utf8').trim().split('\n').pop());
+   for(const detail of [appearance,clothing,accessories,'face extérieure du vêtement','respecte ce placement']){
+    assert.ok(request.prompt.includes(detail),detail);
+   }
   }
   const views=await p.evaluate(()=>({...project.characters[0].views}));
   assert.notEqual(views.front,face);assert.equal(await p.evaluate(()=>project.characters[0].portrait),views.front);

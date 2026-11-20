@@ -266,7 +266,7 @@ const angles={
  front:{label:'Face',direction:'Caméra devant le personnage, à 0°. Visage, torse et pieds tournés vers la caméra. Les deux épaules sont visibles de face.'},
  side:{label:'Profil gauche',direction:'Caméra du côté gauche anatomique du personnage, à 90°. Profil strict, nez et pieds pointant vers le bord gauche de l’image. Une seule joue visible, épaules superposées.'},
  right:{label:'Profil droit',direction:'Caméra du côté droit anatomique du personnage, à 90°. Profil strict, nez et pieds pointant vers le bord droit de l’image. Une seule joue visible, épaules superposées.'},
- back:{label:'Dos',direction:'Caméra directement derrière le personnage, à 180°. Montrer l’arrière de la tête, du vêtement et des talons. Le visage entier est caché, la tête regarde droit devant elle.'}
+ back:{label:'Dos',direction:'Caméra directement derrière le personnage, à 180°. Montrer l’arrière de la tête, du vêtement et des talons. Le visage entier est caché, la tête reste alignée avec la colonne, les épaules et le bassin sont vus de dos. Reprends la coiffure de la fiche et de la face validée : même longueur, couleur, texture, forme et attaches. Respecte aussi un crâne rasé ou des cheveux courts. Si des mèches longues sont libres dans le dos, suis leur chute depuis la nuque : elles reposent sur la face extérieure du vêtement et en masquent le tissu jusqu’aux pointes, sans traverser le col ni disparaître dans la veste. Si la fiche décrit une tresse, un chignon, une capuche ou un accessoire qui retient ou recouvre les cheveux, respecte ce placement. Seules les parties libres retombent.'}
 };
 function selection3D(){
  const type=$('studioCharacter').value?'characters':'places';
