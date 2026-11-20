@@ -200,10 +200,40 @@ async function generate(p,prompt,accept=true){
     const call=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
     assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
     assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
+    const colors={main:[180,30,30],opposite:[30,170,30],left:[40,40,180],right:[190,160,30]};
+    const shown=await p.evaluate(async url=>{
+     const image=new Image();image.src=url;await image.decode();
+     const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+     return [...ctx.getImageData(10,10,1,1).data].slice(0,3);
+    },preview);
+    assert.deepEqual(shown,colors[key].map(v=>light==='night'?Math.floor(v/2):v));
+    if(light==='day'&&key!=='main'){
+     assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue principale (jour)'));
+     assert.ok(call.prompt.includes('nouvelle composition')&&!call.prompt.includes('Reprends le cadrage'));
+    }
     if(light==='night')assert.ok(call.prompt.includes('Image 1 : '+label+' (jour)'));
     assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{...before,[light]:{...before[light],[key]:preview}});
    }
   }
+  await p.locator('#placeGrid select').selectOption('day');
+  const beforeEcho=await p.evaluate(()=>project.places[0].placeViews);
+  const mainPicture=fs.readFileSync(path.join(media,path.basename(beforeEcho.day.main)));
+  const reencoded=await p.evaluate(async url=>{
+   const img=new Image();img.src=url;await img.decode();
+   const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+   canvas.getContext('2d').drawImage(img,0,0);return canvas.toDataURL('image/png').split(',')[1];
+  },beforeEcho.day.main);
+  assert.ok(!mainPicture.equals(Buffer.from(reencoded,'base64')));
+  for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg']){
+   fs.writeFileSync(path.join(folder,'repeat-place'),response);
+   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+   await p.waitForFunction(()=>!aiBusy);
+   assert.ok(await p.locator('#aiAcceptImage').isHidden());
+   assert.match(await p.locator('#aiDialogStep').textContent(),/copie exacte|reproduit une référence|même image/);
+   await p.locator('#aiCloseDialog').click();
+   assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),beforeEcho);
+  }
+  await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
   await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();

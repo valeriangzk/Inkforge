@@ -17,8 +17,10 @@ sys.path.insert(0,str(folder))
 import serveur_inkforge as app
 
 
-def png(seed, width=960, view=None):
+def png(seed, width=960, view=None, wall=None):
     pixels = random.Random(seed).randbytes(width*width*3)
+    if wall:
+        pixels=bytes(wall)*(width*width//2)+pixels[width*width*3//2:]
     if view:
         # A recognizable orientation marker in the test raster: eyes, hair and profile nose.
         pixels=bytearray(pixels)
@@ -78,6 +80,20 @@ class Provider(BaseHTTPRequestHandler):
         else:
             digest=hashlib.sha256((prompt+''.join(images)).encode()).hexdigest()
             raw=png(digest)
+        if prompt.startswith('Vue '):
+            # Build the fake scene from the camera instruction, independently of the button label.
+            directions={'axe principal du lieu (0°)':0,'pivote de 180°':1,'90° vers la gauche':2,'90° vers la droite':3}
+            orientation,= [code for cue,code in directions.items() if cue in prompt]
+            wall = [(180,30,30),(30,170,30),(40,40,180),(190,160,30)][orientation]
+            if 'Nuit :' in prompt: wall=tuple(value//2 for value in wall)
+            raw=png(digest,width=240,wall=wall)
+            echo=folder/'repeat-place'
+            if echo.exists():
+                if echo.read_bytes()==b'jpeg':
+                    raw=base64.b64decode(images[0].split(',',1)[1])
+                else:
+                    raw=echo.read_bytes()
+                echo.unlink()
         if prompt.startswith('Angle demandé'):
             orientations={'devant le personnage':'front','gauche anatomique':'left','droit anatomique':'right','derrière le personnage':'back'}
             matches=[v for cue,v in orientations.items() if cue in prompt.split('Dessine une seule vue')[0]]

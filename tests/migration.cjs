@@ -68,7 +68,7 @@ async function flow(protectedFirst){
    const old=await p.evaluate(async b64=>{const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
      const r=await fetch('/updates/install',{method:'POST',headers:{'Content-Type':'application/zip'},body:bytes});return r.json()
    },fs.readFileSync(path.join(dist,'inkforge-update.zip')).toString('base64'));
-   assert.equal(old.version,'2.6.0');await stop();
+   assert.equal(old.version,'2.6.1');await stop();
  }
  await start(folder,'studio');await p.goto(url);await p.waitForFunction(()=>typeof workspaceReady!=='undefined'&&workspaceReady);
  assert.deepEqual(await p.evaluate(()=>[Object.keys(workspace.projects).length,project.characters.length,project.places.length,current().img]),[0,0,0,'']);

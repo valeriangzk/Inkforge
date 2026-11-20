@@ -283,7 +283,7 @@ def send_generate(payload,key):
     image=local_image(record)
     data=base64.b64decode(image.split(',',1)[1],validate=True)
     local=store_media(data,image[5:image.index(';')])
-    return {'image':local,'references_used':len(req.get('extra_body',{}).get('image',[])),'model':model}
+    return {'image':local,'input_copy':image in req.get('extra_body',{}).get('image',[]),'references_used':len(req.get('extra_body',{}).get('image',[])),'model':model}
 
 # Keep the optional GPU runtime and weights across studio updates.
 LOCAL_3D = Path(os.getenv('LOCALAPPDATA') or Path.home() / '.local' / 'share') / 'INKFORGE' / 'TripoSR'
