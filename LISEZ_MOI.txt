@@ -1,4 +1,4 @@
-INKFORGE Studio 2.4.1 pour Windows
+INKFORGE Studio 2.4.2 pour Windows
 
 Démarrage
 1. Python 3 doit être installé.
@@ -9,7 +9,7 @@ Mises à jour
 2. Si une version plus récente est proposée, cliquez sur Installer la mise à jour.
 3. Après le message de confirmation, fermez la fenêtre noire et relancez LANCER_INKFORGE.cmd.
 
-Pour retrouver vos projets, utilisez le même navigateur et le même profil.
+Pendant la phase expérimentale, les projets et leurs versions enregistrées sont effacés à chaque changement de version du studio.
 Les clés API gardées en mémoire doivent être ressaisies après le redémarrage.
 
 Dépôt des mises à jour : https://github.com/valeriangzk/Inkforge/releases
