@@ -7,6 +7,7 @@ import random
 import struct
 import sys
 import threading
+import time
 import zlib
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -59,7 +60,9 @@ class Provider(BaseHTTPRequestHandler):
 
     def do_POST(self):
         assert self.path=='/v1/images/generations'
-        assert self.headers.get('Authorization')=='Bearer test-secret-never-save'
+        tokens=['Bearer test-secret-never-save']+['Bearer test-queue-private-'+str(i) for i in range(1,7)]
+        key_index=tokens.index(self.headers.get('Authorization'))
+
         req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         assert req['n']==1
         assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
@@ -72,6 +75,16 @@ class Provider(BaseHTTPRequestHandler):
             assert image.startswith('data:image/jpeg;base64,')
             assert base64.b64decode(image.split(',',1)[1],validate=True).startswith(b'\xff\xd8\xff')
         prompt=req['prompt']
+        if key_index:
+            orientation=prompt.split('.')[0]
+            with (folder/'queue.jsonl').open('a',encoding='utf-8') as log:
+                print(json.dumps({'key':'K'+str(key_index),'orientation':orientation}),file=log)
+            if (folder/'deny-key').exists() and key_index==1:
+                return self.reply({},401)
+            hold=folder/('hold-'+str(key_index))
+            deadline=time.monotonic()+20
+            while hold.exists() and time.monotonic()<deadline:
+                time.sleep(0.02)
         with (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
             print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req))}),file=output)
         if prompt.startswith('quota-fournisseur'):
@@ -113,6 +126,8 @@ class Provider(BaseHTTPRequestHandler):
 
 
 if __name__=='__main__':
+    app.MIN_QUOTA_PAUSE=1
+    app.IMAGE_RPM=200
     app.PORT=int(os.getenv('INKFORGE_TEST_PORT','18765'))
     app.LOCAL_3D=folder/'test-runtime'
     app.update_status=lambda:{'current_version':app.BOOT_VERSION,'available':False,'remote_configured':True}

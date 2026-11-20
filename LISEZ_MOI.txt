@@ -1,4 +1,4 @@
-INKFORGE Studio 2.7.1 pour Windows
+INKFORGE Studio 2.7.2 pour Windows
 
 Lancer le studio
 Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.
@@ -6,6 +6,19 @@ Les images, planches, bibliothèques et versions de projet sont enregistrées da
 le dossier _inkforge_travail, à côté du lanceur. Garde ces fichiers ensemble.
 Tu peux aussi exporter un projet JSON avec ses images depuis le studio.
 Les clés API restent dans l’onglet ouvert.
+
+Générations en arrière-plan
+Ajoute tes clés Agnes dans « Clé API ». K1, K2… identifient les clés de cette session.
+Lance les vues souhaitées, puis continue à travailler. Ouvre « Générations IA » en
+haut à droite et choisis « Voir le résultat » pour valider une vue ou remplir une case.
+Garde l’onglet et la fenêtre noire ouverts jusqu’à la validation. Fermer ou recharger
+l’onglet fait perdre la file et les aperçus non validés. Une demande déjà envoyée peut
+être facturée. Une nouvelle tentative se lance uniquement sur demande.
+Le relais accepte quatre générations simultanées au maximum, une par clé, avec une
+limite commune de 20 demandes par minute pour les images 1K. Les limites de ton
+forfait continuent à s’appliquer. En cas de quota atteint la file attend.
+https://agnes-ai.com/doc/terms-of-service
+https://github.com/AgnesAI-Labs/AgnesAI-Models/blob/main/docs/TOKEN_PLAN_FAQ.md
 
 Bibliothèque de décors
 Dans « Ajouter un décor », nomme le lieu et décris séparément ce que voit la

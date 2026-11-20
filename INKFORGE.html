@@ -1,8 +1,9 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.1"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.2"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
 :root{--bg:#0c1018;--panel:#151b26;--line:#293242;--txt:#eef2f7;--muted:#91a0b4;--accent:#8c83ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,Arial}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:210px minmax(0,1fr) 290px;min-height:100vh}aside{background:#111722;padding:17px;border-right:1px solid var(--line)}aside.right{border:0;border-left:1px solid var(--line)}.logo{font-size:23px;font-weight:900;letter-spacing:2px}.logo span{color:var(--accent)}.small,.muted{color:var(--muted);font-size:12px}.nav{display:grid;gap:7px;margin-top:28px}.btn,.nav button{background:#262c3b;border:1px solid #3a4455;border-radius:9px;color:#e1e7f0;padding:10px 12px;text-align:center}.nav button{text-align:left}.nav button.active,.btn.primary{background:var(--accent);color:#10121b;font-weight:750;border-color:transparent}.btn:hover{filter:brightness(1.15)}main{padding:22px;min-width:0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.top h1{margin:0;font-size:24px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:15px 0}.panel h3{margin:0 0 12px}.section{display:none}.section.active{display:block}.page-viewport{overflow:auto;padding:18px;background:#0d121c;border-radius:10px;text-align:center}.page{position:relative;background:#f5f4ef;width:600px;height:820px;margin:auto;box-shadow:0 12px 40px #0008;transform-origin:top left;overflow:hidden;text-align:left}.frame{position:absolute;background:#fff;border:2px solid #141414;overflow:hidden;cursor:move;touch-action:none}.frame.selected{outline:3px solid var(--accent);outline-offset:-3px}.frame img{width:100%;height:100%;object-fit:cover;pointer-events:none}.empty{width:100%;height:100%;display:grid;place-items:center;color:#b3b3b3;font-size:12px}.bubble{position:absolute;background:white;color:#111;border:2px solid #111;border-radius:50%;padding:10px 15px;max-width:85%;min-width:65px;text-align:center;cursor:grab;touch-action:none;white-space:pre-wrap;overflow-wrap:anywhere}.handle{position:absolute;bottom:0;right:0;background:var(--accent);width:16px;height:16px;cursor:nwse-resize;touch-action:none}.field{display:grid;gap:5px;margin:11px 0}.field input,.field textarea,.field select{background:#0d121b;color:white;border:1px solid #344052;border-radius:8px;padding:10px;width:100%}.field textarea{min-height:75px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.item{background:#1b2230;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:hidden}.item img{width:100%;height:145px;object-fit:contain;background:#10151e;border-radius:8px}.item h3{margin:9px 0}.status{background:#1c2432;padding:12px;border-radius:9px;color:#bbc9dd;font-size:12px;line-height:1.5}.hidden{display:none!important}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.preview3d{height:360px;background:radial-gradient(circle,#353e59,#111823);border:1px dashed #59647c;border-radius:12px;display:grid;place-items:center;text-align:center;overflow:hidden}model-viewer{width:100%;height:100%}.help{font-size:12px;color:var(--muted);line-height:1.6}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#303a55;color:white;padding:10px 18px;border-radius:10px;z-index:100;display:none}@media(max-width:1150px){.app{grid-template-columns:170px minmax(0,1fr)}aside.right{grid-column:2;border-left:0;border-top:1px solid var(--line)}}@media(max-width:680px){.app{display:block}aside{padding:12px}.nav{display:flex;overflow:auto;margin-top:12px}.nav button{white-space:nowrap}main{padding:12px}.page-viewport{padding:8px}.top h1{font-size:20px}}@media print{body{background:white}.app>aside,.top,.toolbar,.panel>h3,.help{display:none!important}main{padding:0}.panel,.page-viewport{border:0;padding:0;margin:0;background:white}.page{box-shadow:none;transform:none!important;margin:0;break-after:page}.frame.selected{outline:0}.handle{display:none}}
 
 /* Panneau de clés API, isolé des données de projet */
 body{padding-bottom:46px}.api-bottom{position:fixed;bottom:0;left:0;right:0;z-index:500;background:#151b26;border-top:1px solid #44516a;box-shadow:0 -6px 22px #0007}.api-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 22px;background:transparent;border:0;color:#eef2f7;font-weight:750;text-align:left}.api-toggle:hover{background:#242d3d}.api-drawer{display:none;padding:12px 22px 20px;max-height:65vh;overflow:auto;border-top:1px solid #344052}.api-bottom.open .api-drawer{display:block}.api-bottom.open .api-arrow{transform:rotate(180deg)}.api-drawer-inner{max-width:880px;margin:auto}.api-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#202a3a;border:1px solid #3a4455;border-radius:9px;padding:10px;margin:8px 0}.api-entry button{background:#3b2834;color:#fff;border:1px solid #725064;border-radius:8px;padding:7px 10px}.api-form{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;align-items:end}.api-form label{display:grid;gap:6px;color:#b9c7da;font-size:12px}.api-form input{width:100%;background:#0d121b;color:#fff;border:1px solid #344052;border-radius:8px;padding:10px}.api-form button{padding:10px 15px}.api-note{font-size:12px;color:#aab8cb;line-height:1.55}@media(max-width:680px){.api-form{grid-template-columns:1fr}.api-toggle{padding:11px 14px}}
+#generationPanel{position:fixed;z-index:9000;right:14px;top:64px;max-width:min(360px,85vw);border:1px solid #585676;border-radius:10px;background:#192132;color:#eef2f7;box-shadow:0 4px 18px #0007}#generationPanel summary{cursor:pointer;padding:9px 14px;font-weight:bold}#generationRows{max-height:36vh;overflow:auto}#generationRows>div{border-top:1px solid #394153;padding:8px 12px}#generationRows span{display:block;overflow-wrap:anywhere}#generationRows button{margin:4px 5px 0 0;padding:3px 7px}#generationRows [data-state="En cours"] span:before{content:'◌';display:inline-block;margin-right:5px;color:#a59aff;animation:queueSpin 1.4s linear infinite}@keyframes queueSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#generationRows [data-state] span:before{animation:none}}
 </style><style id="inkHelpStyles">
 .ink-help-top{display:flex;align-items:center;gap:12px}.ink-help-button{height:36px;width:36px;border-radius:50%;border:1px solid #8c83ff;background:#272844;color:white;font-weight:800;font-size:20px}.ink-help-button:hover{background:#434078}
 .ink-help-panel[hidden],.ink-tooltip[hidden]{display:none!important}.ink-help-panel{position:fixed;z-index:10001;top:65px;right:16px;width:min(410px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow:auto;padding:20px;background:#192132;color:#eef2f7;border:1px solid #62649a;border-radius:14px;box-shadow:0 16px 55px #000a}
@@ -73,7 +74,7 @@ async function localRequest(path,options={}){
  catch(err){if(err.name==='AbortError')throw err;throw Error('Le relais local a perdu la connexion. Vérifie que la fenêtre noire INKFORGE est ouverte, puis relance le studio si nécessaire.')}
  let data;
  try{data=await response.json()}catch{throw Error('Réponse du relais illisible. Ferme la fenêtre noire et relance INKFORGE.')}
- if(!response.ok){const err=Error(response.status===404&&(!data.error||['Page introuvable','Route introuvable'].includes(data.error))?'Cette fonction nécessite le nouveau relais. Ferme la fenêtre noire et relance INKFORGE.':data.error||'Erreur du relais local ('+response.status+').');err.status=response.status;throw err}
+ if(!response.ok){const err=Error(response.status===404&&(!data.error||['Page introuvable','Route introuvable'].includes(data.error))?'Cette fonction nécessite le nouveau relais. Ferme la fenêtre noire et relance INKFORGE.':data.error||'Erreur du relais local ('+response.status+').');err.status=response.status;err.providerStatus=data.provider_status;err.retryAfter=data.retry_after;throw err}
  return data;
 }
 function postJSON(path,body,signal){return localRequest(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal})}
@@ -210,23 +211,32 @@ const viewAttempts=[];
 function mediaFingerprint(url){
  return typeof url==='string'&&url.match(/^\/media\/([a-f0-9]{64})\./)?.[1]||'—';
 }
-async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false,attempt=null){
+async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false,attempt=null,progress=()=>{}){
  const requestId=crypto.randomUUID(), body={requestId,apiKey:key,model,prompt,character:await referenceEntity(character),place:await referenceEntity(place,true),frame};
  let interrupted=false;
- try{await postJSON('/ai/generate',body)}catch(e){if(e.status)throw e;interrupted=true}
+ try{
+  for(;;){
+   const admission=await postJSON('/ai/generate',body,AbortSignal.timeout(25000));
+   if(!admission.deferred){progress('Demande transmise au relais');break}
+   progress('En attente de la capacité du relais ou du quota commun');
+   await new Promise(resolve=>setTimeout(resolve,Math.min(60000,admission.deferred*1000)));
+  }
+ }catch(e){if(e.status)throw e;interrupted=true}
  let result,failures=0;
+ const deadline=Date.now()+240000;
  for(;;){
-  try{result=await postJSON('/ai/result',{ticket:requestId});failures=0}
-  catch(e){if(e.status||++failures>=8)throw Error(interrupted?'Le relais n’a pas confirmé la génération. Vérifie la fenêtre noire avant de réessayer.':e.message)}
+  if(Date.now()>deadline)throw Object.assign(Error('Délai dépassé. La demande a pu être facturée.'),{uncertain:true});
+  try{result=await postJSON('/ai/result',{ticket:requestId},AbortSignal.timeout(10000));failures=0}
+  catch(e){if(e.status||++failures>=8)throw Object.assign(Error(interrupted?'Le relais n’a pas confirmé la génération. Vérifie la fenêtre noire avant de réessayer.':e.message),{uncertain:true})}
   if(result && !result.pending)break;
   await new Promise(resolve=>setTimeout(resolve,750));
  }
  if(attempt)Object.assign(attempt,{ticket:requestId,request:result.request_hash,received:mediaFingerprint(result.image),count:result.response_count});
- if(result.error)throw Error(result.error);
+ if(result.error)throw Object.assign(Error(result.error),{providerStatus:result.provider_status,retryAfter:result.retry_after,uncertain:result.uncertain});
  if(rejectReferenceCopy&&result.input_copy)throw Error('Agnes a reproduit une référence à l’identique. Les vues validées sont conservées.');
  if(!mediaURL(result.image))throw Error('Image Agnes AI indisponible.');
- aiDialogImage.src=result.image;
- try{await aiDialogImage.decode()}catch{throw Error('Le navigateur ne peut pas lire l’image renvoyée par Agnes AI.')}
+ const decoded=new Image();decoded.src=result.image;
+ try{await decoded.decode()}catch{throw Error('Le navigateur ne peut pas lire l’image renvoyée par Agnes AI.')}
  return result.image;
 }
 const agnesKey=()=>window.inkforgeAgnesKey?.()||'';
@@ -238,15 +248,82 @@ aiDialog.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="aiDial
 <button class="btn primary" id="aiAcceptImage" style="display:none">Insérer dans la case</button><button class="btn" id="aiCloseDialog">Fermer</button></div></div>`;
 document.body.append(aiDialog);
 const aiDialogStep=$('aiDialogStep'),aiDialogImage=$('aiDialogImage'),aiAccept=$('aiAcceptImage'),aiClose=$('aiCloseDialog');
-let aiBusy=false,aiPending=null;
+const generationKeys=[], generationTasks=[];
+let nextKeyId=1, activeGenerations=0, quotaUntil=0;
+const panel=document.createElement('details');
+panel.id='generationPanel';panel.hidden=true;
+panel.innerHTML='<summary>Générations IA</summary><div id="generationRows"></div>';
+document.body.append(panel);
+function paintTasks(){
+ panel.querySelector('summary').textContent='Générations IA · '+generationTasks.filter(t=>t.state==='En cours'||t.state==='En attente').length+' en cours ou en attente';
+ const rows=$('generationRows');rows.replaceChildren();
+ for(const t of [...generationTasks].reverse()){
+  const row=document.createElement('div'),label=document.createElement('span');
+  row.dataset.state=t.state;
+  label.textContent=[t.keyLabel||(t.local?'Panorama local':'En attente d’une clé'),t.label,t.state,t.detail||(t.state==='En attente'&&Date.now()<quotaUntil?'Quota commun en pause':t.state==='En attente'&&!t.local&&!generationKeys.some(k=>k.agnes&&!k.disabled)?'Ajoute ou vérifie une clé Agnes dans le tiroir Clé API':''),t.error].filter(Boolean).join(' — ');
+  row.append(label);
+  if(t.result||t.error){
+   const view=document.createElement('button');view.className='btn';view.textContent=t.error?'Voir l’erreur':'Voir le résultat';
+   view.onclick=()=>{
+    if(t.result?.target.accepted){aiPending=null;showAi(t.result.title,'Image déjà validée.',t.result.target.image);aiAccept.style.display='none';return}
+    if(t.result&&project.id!==t.projectId)return notify('Ouvre le projet « '+t.projectTitle+' » pour valider cette image.');
+    aiPending=t.result?.target||null;
+    if(t.error)showAi('Génération échouée',t.error);
+    else showAi(t.result.title,t.result.message,t.result.target.image);
+   };row.append(view);
+   if(t.error){
+    const retry=document.createElement('button');retry.className='btn';retry.textContent='Réessayer';
+    retry.onclick=()=>{if(confirm('Lancer une nouvelle demande potentiellement facturée ?'))enqueueGeneration(t)};
+    row.append(retry);
+   }
+  }
+  if(t.result||t.error){
+   const remove=document.createElement('button');remove.className='btn';remove.textContent='Retirer';
+   remove.onclick=()=>{generationTasks.splice(generationTasks.indexOf(t),1);panel.hidden=!generationTasks.length;paintTasks()};
+   row.append(remove);
+  }
+  rows.append(row);
+ }
+ window.dispatchEvent(new Event('inkforge-key-state'));
+}
+function enqueueGeneration(spec){
+ if(generationTasks.some(t=>t.slot===spec.slot&&['En cours','En attente'].includes(t.state)))return notify('Cette génération est déjà en cours ou en attente.');
+ const task={...spec,state:'En attente',detail:'',error:'',result:null,keyLabel:''};
+ generationTasks.push(task);panel.hidden=false;panel.open=true;paintTasks();pumpGenerations();
+}
+function pumpGenerations(){
+ for(const t of generationTasks){
+  if(t.state!=='En attente'||activeGenerations>=4)continue;
+  const entry=t.local?null:generationKeys.find(k=>k.agnes&&!k.busy&&!k.disabled);
+  if(!t.local&&(!entry||Date.now()<quotaUntil))continue;
+  t.state='En cours';activeGenerations++;
+  if(entry){entry.busy=true;t.keyLabel=entry.id}
+  paintTasks();
+  Promise.resolve().then(()=>t.run(entry?.secret,detail=>{t.detail=detail;paintTasks()})).then(result=>{
+   t.detail='';t.run=null;t.result=result;t.state='Terminée';
+  }).catch(e=>{
+   t.detail='';t.error=e.message;t.state='Échouée';
+   if(entry&&([401,403].includes(e.providerStatus)||e.uncertain))entry.disabled=true;
+   if([402,429].includes(e.providerStatus)){
+    quotaUntil=Math.max(quotaUntil,Date.now()+1000*(e.retryAfter||60));
+    setTimeout(()=>{paintTasks();pumpGenerations()},quotaUntil-Date.now()+1);
+   }
+  }).finally(()=>{if(entry)entry.busy=false;activeGenerations--;paintTasks();pumpGenerations()});
+ }
+}
+window.addEventListener('beforeunload',event=>{
+ if(generationTasks.some(t=>['En attente','En cours'].includes(t.state)||t.result&&!t.result.target.accepted)){event.preventDefault();event.returnValue=''}
+});
+
+let aiPending=null;
 function showAi(title,message,img=''){
  $('aiDialogTitle').textContent=title;aiDialogStep.textContent=message;aiDialogImage.style.display=img?'block':'none';if(img){if(aiDialogImage.getAttribute('src')!==img)aiDialogImage.src=img}else aiDialogImage.removeAttribute('src');
  aiAccept.textContent=aiPending?.characterId?'Valider cette vue':'Insérer dans la case';
  aiAccept.style.display=img?'inline-block':'none';aiDialog.style.display='flex';
  $('aiStatus').textContent=message;
 }
-aiClose.onclick=()=>{if(aiBusy)return;aiDialog.style.display='none';};
-aiDialog.onclick=e=>{if(e.target===aiDialog&&!aiBusy)aiDialog.style.display='none'};
+aiClose.onclick=()=>{aiDialog.style.display='none';};
+aiDialog.onclick=e=>{if(e.target===aiDialog)aiDialog.style.display='none'};
 async function tripoReady(){
  const response=await fetch('/3d/status',{cache:'no-store'});
  if(!response.ok)throw Error('Relance INKFORGE avec son lanceur Windows.');
@@ -428,19 +505,19 @@ async function generateCharacterPortrait(character,angle='front',place=false,fro
  const description=place?placeDescription(character,sphere?null:angle):character.description;
  if(place&&!sphere&&!local&&!description.trim())return showAi('Description à compléter','Ouvre la fiche et renseigne le champ « '+placeAngles[angle].label+' » avant de générer cette vue.');
  if(!local&&![description,character.appearance,character.clothing,character.accessories,character.notes,source3D(character)].some(Boolean))return showAi('Fiche à compléter','Décris la fiche ou ajoute une image de référence.');
- if(aiBusy)return;
  const key=agnesKey();
  if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const projectId=project.id;
+ character=clone(character);
+ const projectTitle=project.title, lighting=character.lighting||'day';
+ const label=sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label;
+ const selectedModel=$('agnesModel').value;
+ enqueueGeneration({projectId,projectTitle,slot:[projectId,character.id,angle,lighting].join('/'),label:character.name+' · '+label+(place?' · '+(lighting==='night'?'Nuit':'Jour'):''),local:Boolean(local),run:async (key,progress)=>{
  const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
  viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
- aiPending=null;aiBusy=true;aiClose.disabled=true;
- showAi('Création de la référence','Préparation de la vue depuis la fiche…');
  try{
-   if(!local&&!$('agnesModel').value)await loadAiModels(false,true);
-   const model=$('agnesModel').value;
+   const model=selectedModel||(!local&&chooseFirstModel((await aiFetch('/ai/models',{apiKey:key})).data)?.id);
    if(!local&&!model)throw Error('Aucun modèle image disponible avec cette clé.');
-   const lighting=character.lighting||'day';
    const otherLighting=lighting==='night'?'day':'night';
    const otherViews=place?Object.values(character.placeViews||{}).flatMap(group=>
     Object.entries(group).filter(([key])=>key!==angle).map(([,url])=>url)):[];
@@ -476,7 +553,7 @@ async function generateCharacterPortrait(character,angle='front',place=false,fro
     // Condition on the approved identity, without mixing unlabeled camera angles.
     entity.portrait=character.views.front;entity.references=[];entity.img='';
    }
-   const image=local?await panoramaView(local,angle,lighting):await generateImage(key,model,prompt,place?null:entity,place?entity:null,sphere?{w:16,h:9,panorama:true}:place?{w:4,h:3}:{w:3,h:4},place&&!sphere&&(angle!=='main'||Boolean(relight)),attempt);
+   const image=local?await panoramaView(local,angle,lighting):await generateImage(key,model,prompt,place?null:entity,place?entity:null,sphere?{w:16,h:9,panorama:true}:place?{w:4,h:3}:{w:3,h:4},place&&!sphere&&(angle!=='main'||Boolean(relight)),attempt,progress);
    if(local){attempt.ticket=crypto.randomUUID();attempt.request='Panorama '+mediaFingerprint(local)+' / '+angle+' / '+lighting;attempt.received=mediaFingerprint(image);attempt.count=1}
    if(place&&!local&&character.placeViews?.[otherLighting]?.[angle]===image){
     throw Error('Agnes a renvoyé la même image pour le jour et la nuit. Les vues validées sont conservées.');
@@ -502,13 +579,12 @@ async function generateCharacterPortrait(character,angle='front',place=false,fro
      }
     }
    }
-   if(local){aiDialogImage.src=image;await aiDialogImage.decode()}
-   attempt.preview=mediaFingerprint(aiDialogImage.getAttribute('src'));
+   attempt.preview=mediaFingerprint(image);
    attempt.status='Aperçu';
-   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt};
-   showAi('Référence de '+character.name+(' · '+(sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label)),sphere?'Vérifie que le panorama couvre tout le lieu et que ses bords se raccordent. Les quatre vues seront ensuite extraites sur ce PC.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
- }catch(e){attempt.status=e.message;showAi('Création de la référence impossible',e.message)}
- finally{aiBusy=false;aiClose.disabled=false}
+   return {target:{projectId,characterId:character.id,angle,place,lighting,image,attempt},title:'Référence de '+character.name+' · '+label,message:sphere?'Vérifie le panorama avant de le valider.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction};
+ }catch(e){attempt.status=e.message;throw e}
+ }});
+
 }
 
 aiAccept.onclick=async()=>{
@@ -517,6 +593,8 @@ aiAccept.onclick=async()=>{
  if(saved.characterId){
    const character=project[saved.place?'places':'characters'].find(item=>item.id===saved.characterId);
    if(saved.projectId!==project.id||!character)return showAi('Fiche introuvable','Rouvre le personnage depuis le projet.');
+   const siblings=saved.place?Object.values(character.placeViews||{}):[character.views||{}];
+   if(siblings.some(group=>Object.entries(group).some(([angle,image])=>angle!==saved.angle&&image===saved.image)))return showAi('Référence identique','Cette image est déjà validée pour une autre vue.');
    const previous=clone(project);
    if(saved.place&&saved.angle==='panorama')character.panorama=saved.image;
    else if(saved.place){
@@ -531,7 +609,7 @@ aiAccept.onclick=async()=>{
     workspace.projects[previous.id]=project=previous;aiPending=saved;
     showAi('Référence non enregistrée',e.message,saved.image);aiAccept.textContent='Réessayer l’enregistrement';return;
    }
-   saved.attempt.status='Validée';
+   saved.accepted=true;saved.attempt.status='Validée';
    saved.attempt.stored=mediaFingerprint(saved.angle==='panorama'?character.panorama:saved.place?character.placeViews[saved.lighting][saved.angle]:character.views[saved.angle]);
    history.push(previous);if(history.length>60)history.shift();future=[];
    aiPending=null;aiDialog.style.display='none';renderAll();notify('Référence enregistrée dans la fiche');
@@ -548,7 +626,7 @@ aiAccept.onclick=async()=>{
    return;
  }
  history.push(previous);if(history.length>60)history.shift();future=[];
- page=saved.page;selected=saved.index;renderAll();
+ saved.accepted=true;page=saved.page;selected=saved.index;renderAll();
  aiPending=null;aiDialog.style.display='none';$('aiStatus').textContent='Image insérée dans la case sélectionnée.';notify('Image ajoutée à la planche');
 };
 function chooseFirstModel(list){return list.find(m=>m.id.toLowerCase().includes('image'))||null}
@@ -578,25 +656,26 @@ $('testAgnes').onclick=async()=>{
  }catch(e){showAi('Test de connexion — erreur',e.message)}
 };
 $('generate').onclick=async()=>{
- if(aiBusy)return;
  const key=agnesKey(),promptText=$('aiPrompt').value.trim(),model=$('agnesModel').value;
  if(!key)return showAi('Clé API manquante','Ouvre le tiroir « Clé API » en bas et ajoute ta clé Agnes AI.');
  if(!promptText)return showAi('Description manquante','Décris la scène à générer.');
- if(!model)return showAi('Modèle manquant','Clique sur « Actualiser les modèles » et choisis un modèle d’image.');
+
  const frame=current();if(!frame)return showAi('Aucune case sélectionnée','Ajoute puis sélectionne une case dans l’éditeur de planches.');
  const character=project.characters.find(x=>x.id===$('aiCharacter').value)||null;
  const place=project.places.find(x=>x.id===$('aiPlace').value)||null;
  const target={projectId:project.id,page,index:selected,frameId:frame.id};
- aiBusy=true;aiClose.disabled=true;$('generate').disabled=true;aiPending=null;
- showAi('Génération IA en cours','Étape 1/3 : préparation du personnage, du décor et de la case…');
- try{
-  aiDialogStep.textContent='Étape 2/3 : envoi à Agnes AI et attente du résultat…\nSelon le modèle, cette opération peut prendre un moment.';
-  const image=await generateImage(key,model,promptText,character,place,{w:frame.w,h:frame.h});
-  aiPending={...target,image};
-  showAi('Aperçu de la génération','Étape 3/3 : image générée. Vérifie le résultat avant de l’insérer dans la case.',image);
- }catch(e){showAi('Échec de génération',e.message+'\nLa case est conservée.')}finally{aiBusy=false;aiClose.disabled=false;$('generate').disabled=false}
+ const inputs=clone({character,place,frame:{w:frame.w,h:frame.h}});
+ enqueueGeneration({projectId:project.id,projectTitle:project.title,slot:project.id+'/'+frame.id,label:project.title+' · Planche '+(page+1)+' · Case '+(selected+1),run:async (key,progress)=>{
+  try{
+   const selected=model||chooseFirstModel((await aiFetch('/ai/models',{apiKey:key})).data)?.id;
+   if(!selected)throw Error('Aucun modèle image disponible avec cette clé.');
+   const image=await generateImage(key,selected,promptText,inputs.character,inputs.place,inputs.frame,false,null,progress);
+   return {target:{...target,image},title:'Aperçu de la génération',message:'Vérifie le résultat avant de l’insérer dans la case.'};
+  }catch(e){e.message+=' La case est conservée.';throw e}
+ }});
+
 };
-window.addEventListener('inkforge-api-key-added',()=>{if(document.getElementById('ai').classList.contains('active'))loadAiModels(false)});
+window.addEventListener('inkforge-api-key-added',()=>{if(!$('agnesModel').value)loadAiModels(false)});
 $('modelFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;if(modelURL)URL.revokeObjectURL(modelURL);modelURL=URL.createObjectURL(file);const area=$('modelArea');area.innerHTML='<span class="muted">Chargement du visualiseur 3D…</span>';if(!customElements.get('model-viewer')){try{await import('https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js')}catch(err){area.textContent='Visualiseur 3D indisponible : une connexion Internet est nécessaire.';return}}area.innerHTML='';const viewer=document.createElement('model-viewer');viewer.src=modelURL;viewer.setAttribute('camera-controls','');viewer.setAttribute('auto-rotate','');viewer.setAttribute('shadow-intensity','1');viewer.setAttribute('environment-image','neutral');viewer.alt='Modèle 3D importé';area.append(viewer)};
 function refreshBubbleLibrary(){const list=$('bubbleCustom');const old=list.value;list.replaceChildren(new Option('Forme standard',''));(project.bubbleLibrary||[]).forEach(b=>list.add(new Option(b.name,b.id)));list.value=old;}
 $('dialogue').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!current())return;const value=e.target.value;change(()=>{current().dialogue=value;current().scene=$('scene').value});notify('Bulle ajoutée à la case')}});
@@ -608,7 +687,7 @@ window.addEventListener('DOMContentLoaded',openWorkspace);
 // Clés volontairement limitées à la mémoire de l'onglet, hors project et localStorage.
 document.addEventListener('DOMContentLoaded',()=>{
 'use strict';
-const keys=[],byId=id=>document.getElementById(id);window.inkforgeAgnesKey=()=>keys.find(k=>/agn[eè]s/i.test(k.provider||''))?.secret||'';
+const keys=generationKeys,byId=id=>document.getElementById(id);window.inkforgeAgnesKey=()=>(keys.find(k=>k.agnes&&!k.disabled)||keys.find(k=>k.agnes))?.secret||'';
 const bottom=byId('apiBottom'),toggle=byId('apiToggle');
 toggle.addEventListener('click',()=>{const open=bottom.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open))});
 function paint(){
@@ -617,19 +696,20 @@ function paint(){
  keys.forEach((entry,i)=>{
   const row=document.createElement('div');row.className='api-entry';
   const label=document.createElement('span');
-  label.textContent=`${entry.provider} · clé ${i+1} · ••••${entry.secret.slice(-4)} · ${entry.status}`;
+  label.textContent=`${entry.provider} · ${entry.id} · ${entry.busy?'Occupée':entry.disabled||Date.now()<quotaUntil?'Indisponible':'Disponible'} · ${entry.status}`;
   const del=document.createElement('button');del.type='button';del.textContent='Supprimer';
-  del.onclick=()=>{keys.splice(i,1);paint()};
+  del.onclick=()=>{if(entry.busy)return notify('Cette clé est occupée.');keys.splice(i,1);paint()};
   row.append(label,del);list.append(row);
  });
 }
 byId('addApiKey').onclick=()=>{
  const provider=byId('apiProvider').value.trim()||'Agnes AI',secret=byId('apiSecret').value.trim();
  if(!secret){alert('Collez une clé API.');return}
- keys.push({provider,secret,status:'Non testée'});
+ if(keys.some(k=>k.secret===secret)){notify('Cette clé est déjà enregistrée.');return}
+ keys.push({id:'K'+nextKeyId++,provider,secret,agnes:/agn[eè]s/i.test(provider),status:'Non testée'});pumpGenerations();
  byId('apiSecret').value='';paint();window.dispatchEvent(new Event('inkforge-api-key-added'));
 };
-byId('clearApiKeys').onclick=()=>{if(keys.length&&confirm('Effacer toutes les clés de cette session ?')){keys.length=0;paint()}};
+byId('clearApiKeys').onclick=()=>{if(keys.some(k=>k.busy))return notify('Une clé est occupée.');if(keys.length&&confirm('Effacer toutes les clés de cette session ?')){keys.length=0;paint()}};
 const overlay=document.createElement('div');
 overlay.style.cssText='display:none;position:fixed;inset:0;background:#000c;z-index:20000;align-items:center;justify-content:center;padding:18px';
 const dialog=document.createElement('div');
@@ -651,14 +731,15 @@ byId('validateApiKeys').onclick=async()=>{
    try{
     const r=await fetch('/validate-keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider:entry.provider,apiKey:entry.secret}),signal:ctrl.signal,cache:'no-store'});
     const data=await r.json();
+    if(data.connected===true)entry.disabled=false;else if(data.connected===false)entry.disabled=true;
     entry.status=r.ok&&data.connected===true?'Connectée':data.connected===false?'Non connectée'+(data.reason?' ('+data.reason+')':''):'Non vérifiable'+(data.reason?' ('+data.reason+')':'');
    }catch(e){entry.status='Non vérifiable (relais local inaccessible ou délai dépassé)'}
    finally{clearTimeout(timer);paint()}
   }
-  show(keys.map((k,i)=>`${k.provider} · clé ${i+1} : ${k.status}`).join('\n')+'\n\nLe test ne déclenche aucune génération payante.');
- }finally{btn.disabled=false;btn.textContent='Valider les connexions'}
+  show(keys.map((k,i)=>`${k.provider} · ${k.id} : ${k.status}`).join('\n')+'\n\nLe test ne déclenche aucune génération payante.');
+ }finally{btn.disabled=false;btn.textContent='Valider les connexions';pumpGenerations()}
 };
-paint();
+window.addEventListener('inkforge-key-state',paint);paint();
 });
 </script><script id="inkHelpLogic">
 (()=>{
@@ -822,7 +903,7 @@ diagnostic.ontoggle=()=>{
  report.textContent=lines.join('\n');
 };
 d.append(diagnostic);
-d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);if(place)d.prepend(h,info,bar);else d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.1</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
+d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);if(place)d.prepend(h,info,bar);else d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.2</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
  'use strict';
  const $=id=>document.getElementById(id),modal=$('inkUpdateDialog'),status=$('inkUpdateStatus');
  const auto=$('inkUpdateAuto'),manual=$('inkUpdateInstall'),restore=$('inkRestore');

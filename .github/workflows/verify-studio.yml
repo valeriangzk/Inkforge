@@ -27,6 +27,7 @@ jobs:
       - run: npx playwright install chromium
       - run: python tests/test_updates.py
       - run: python tests/test_engine.py
+      - run: python tests/test_generation_queue.py
       - run: node tests/browser.cjs
       - run: node tests/migration.cjs
       - run: python tools/prepare_release.py dist
