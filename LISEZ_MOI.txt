@@ -1,15 +1,32 @@
-INKFORGE Studio 2.4.2 pour Windows
+INKFORGE Studio 2.5.0 pour Windows
 
-Démarrage
-1. Python 3 doit être installé.
-2. Double-cliquez sur LANCER_INKFORGE.cmd.
+Lancer le studio
+Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.
+Les images, planches, bibliothèques et versions de projet sont enregistrées dans
+le dossier _inkforge_travail, à côté du lanceur. Garde ces fichiers ensemble.
+Tu peux aussi exporter un projet JSON avec ses images depuis le studio.
+Les clés API restent dans l’onglet ouvert.
 
-Mises à jour
-1. Au démarrage, INKFORGE consulte les versions publiées sur GitHub.
-2. Si une version plus récente est proposée, cliquez sur Installer la mise à jour.
-3. Après le message de confirmation, fermez la fenêtre noire et relancez LANCER_INKFORGE.cmd.
+Premier passage depuis la 2.4.2
+Le bouton de la 2.4.2 sait copier le programme. Pour sauvegarder aussi tes projets
+AVANT de changer le programme, ferme la fenêtre noire et lance l’assistant
+MISE_A_JOUR_INKFORGE.cmd. Choisis ton LANCER_INKFORGE.cmd, ouvre le même profil
+de navigateur que d’habitude et clique sur « Installer la mise à jour ».
+Si la 2.4.2 a signalé une erreur d’enregistrement et que le projet est encore
+ouvert, utilise d’abord « Projet JSON » pour récupérer les modifications en mémoire.
 
-Pendant la phase expérimentale, les projets et leurs versions enregistrées sont effacés à chaque changement de version du studio.
-Les clés API gardées en mémoire doivent être ressaisies après le redémarrage.
+Mises à jour suivantes
+Clique sur « Installer la mise à jour » dans le studio. INKFORGE vérifie une
+copie de la version et de ses données avant de remplacer l’ancienne sauvegarde.
+Ferme ensuite la fenêtre noire et relance ton lanceur habituel. Chaque nouvelle
+version démarre avec un espace de travail vide. TripoSR reste installé.
 
-Dépôt des mises à jour : https://github.com/valeriangzk/Inkforge/releases
+Restaurer
+Ouvre « Mises à jour » puis « Restaurer la version … ». La restauration remplace
+le travail actuel. Si le studio ne démarre plus, ferme sa fenêtre noire et
+double-clique sur RESTAURER_INKFORGE.cmd dans ton dossier INKFORGE.
+Pour restaurer la 2.4.2, utilise le même navigateur et le même profil qu’avant.
+La copie de secours vérifiée se trouve dans _secours_inkforge.zip.
+
+Dépôt du studio
+https://github.com/valeriangzk/Inkforge

@@ -1,0 +1,82 @@
+"""Two real loopback HTTP servers. Only the paid Agnes service is simulated."""
+import base64
+import hashlib
+import json
+import os
+import random
+import struct
+import sys
+import threading
+import zlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+folder = Path(sys.argv[1]).resolve()
+sys.path.insert(0,str(folder))
+import serveur_inkforge as app
+
+
+def png(seed, width=960):
+    pixels = random.Random(seed).randbytes(width*width*3)
+    def chunk(name,data):
+        return struct.pack('>I',len(data))+name+data+struct.pack('>I',zlib.crc32(name+data))
+    scanlines = b''.join(b'\0'+pixels[i:i+width*3] for i in range(0,len(pixels),width*3))
+    return (b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,width,8,2,0,0,0))
+            +chunk(b'IDAT',zlib.compress(scanlines,1))+chunk(b'IEND',b''))
+
+
+class Provider(BaseHTTPRequestHandler):
+    def log_message(self,*args):
+        pass
+
+    def reply(self,data,status=200):
+        body=json.dumps(data).encode()
+        self.send_response(status)
+        self.send_header('Content-Type','application/json')
+        self.send_header('Content-Length',str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        assert self.path=='/v1/models'
+        self.reply({'data':[{'id':'agnes-image-2.5-flash'}]})
+
+    def do_POST(self):
+        assert self.path=='/v1/images/generations'
+        assert self.headers.get('Authorization')=='Bearer test-secret-never-save'
+        req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
+        assert req['ratio'] in ('1:1','3:4','4:3') and 'response_format' not in req
+        extra=req.get('extra_body',{})
+        images=extra.get('image',[])
+        assert (images and extra['response_format']=='b64_json') or req.get('return_base64') is True
+        assert len(images)<=5
+        for image in images:
+            assert image.startswith('data:image/jpeg;base64,')
+            assert base64.b64decode(image.split(',',1)[1],validate=True).startswith(b'\xff\xd8\xff')
+        prompt=req['prompt']
+        with (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
+            print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req))}),file=output)
+        if prompt.startswith('quota-fournisseur'):
+            return self.reply({},429)
+        if prompt.startswith('image-incomplete'):
+            raw=b'\x89PNG\r\n\x1a\n'
+        else:
+            digest=hashlib.sha256((prompt+''.join(images)).encode()).hexdigest()
+            raw=png(digest)
+        self.reply({'data':[{'b64_json':base64.b64encode(raw).decode()}]})
+
+
+if __name__=='__main__':
+    app.PORT=int(os.getenv('INKFORGE_TEST_PORT','18765'))
+    app.LOCAL_3D=folder/'test-runtime'
+    app.update_status=lambda:{'current_version':app.BOOT_VERSION,'available':False,'remote_configured':True}
+    provider=ThreadingHTTPServer(('127.0.0.1',0),Provider)
+    app.AGNES=f'http://127.0.0.1:{provider.server_port}/v1/models'
+    app.AGNES_GENERATE=app.AGNES.replace('/models','/images/generations')
+    threading.Thread(target=provider.serve_forever,daemon=True).start()
+    app.recovery_tools()
+    if not (folder/'reference0.png').exists():
+        for i in range(5):
+            (folder/f'reference{i}.png').write_bytes(png(i))
+    app.ThreadingHTTPServer((app.HOST,app.PORT),app.Handler).serve_forever()
