@@ -39,11 +39,27 @@ async function validateReference(p,trigger,subject,angle){
  // The dialog also opens on failure. Its close button is enabled when generation finishes.
  try{
   await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
-  assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject);
+  assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+(angle==='Décor'?'':' · '+angle));
   assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
+  const preview=await dialog.locator('#aiDialogImage').getAttribute('src');
+  if(angle!=='Décor'){
+   const request=JSON.parse(fs.readFileSync(path.join(folder,'views.jsonl'),'utf8').trim().split('\n').pop());
+   const cues={'Face':'Les deux épaules','Profil gauche':'bord gauche','Profil droit':'bord droit','Dos':'Le visage entier est caché'};
+   assert.ok(request.prompt.startsWith('Angle demandé — '+angle+'.')&&request.prompt.includes(cues[angle]));
+   if(angle!=='Face')assert.equal(request.refs,1);
+   assert.equal(preview,'/media/'+request.sha+'.png');
+   const raster=await dialog.locator('#aiDialogImage').evaluate(img=>{
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=100;
+    const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+    return [[35,42],[65,42],[18,55],[80,55],[50,50]].map(([x,y])=>ctx.getImageData(x,y,1,1).data[0]);
+   });
+   const expected={'Face':[0,0,255,255,220],'Profil gauche':[0,220,220,255,220],
+    'Profil droit':[220,0,255,220,220],'Dos':[55,55,255,255,55]};
+   assert.deepEqual(raster,expected[angle]);
+  }
   await dialog.getByRole('button',{name:'Valider cette vue',exact:true}).click();
   await dialog.waitFor({state:'hidden'});
-  await saved(p);
+  await saved(p);return preview;
  }catch(error){
   throw new Error(angle+' — '+await dialog.locator('#aiDialogTitle').textContent()+' — '+await dialog.locator('#aiDialogStep').textContent(),{cause:error});
  }
@@ -116,24 +132,35 @@ async function generate(p,prompt,accept=true){
   assert.ok(calls.every(c=>c.size<4_000_000));
   await key(p);await p.locator('[data-tab=characters]').click();
   const face=await p.evaluate(()=>project.characters[0].views.front);
-  for(const label of ['Profil gauche','Dos']){
+  for(const [angle,label] of [['side','Profil gauche'],['right','Profil droit'],['back','Dos']]){
    const before=await p.evaluate(()=>({...project.characters[0].views}));
-   await validateReference(p,p.getByRole('button',{name:'Générer · '+label,exact:true}),'Sujet de vérification',label);
+   const preview=await validateReference(p,p.getByRole('button',{name:'Générer · '+label,exact:true}),'Sujet de vérification',label);
    const after=await p.evaluate(()=>({...project.characters[0].views}));
-   const angle=label==='Dos'?'back':'side';
+   assert.equal(after[angle],preview);
    assert.ok(after[angle]?.startsWith('/media/'));
    assert.deepEqual(after,{...before,[angle]:after[angle]});
    assert.ok(!Object.values(before).includes(after[angle]));
 
   }
+  for(const [angle,label] of [['front','Face'],['side','Profil gauche'],['right','Profil droit'],['back','Dos']]){
+   const before=await p.evaluate(()=>({...project.characters[0].views}));
+   const preview=await validateReference(p,p.getByRole('button',{name:'Régénérer · '+label,exact:true}),'Sujet de vérification',label);
+   assert.notEqual(before[angle],preview);
+   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),{...before,[angle]:preview});
+  }
   const views=await p.evaluate(()=>({...project.characters[0].views}));
-  assert.equal(views.front,face);assert.ok(views.side&&views.back);
+  assert.notEqual(views.front,face);assert.equal(await p.evaluate(()=>project.characters[0].portrait),views.front);
   await p.getByRole('button',{name:'Régénérer · Profil gauche'}).click();
   await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
+  fs.copyFileSync(path.join(media,path.basename(views.front)),path.join(folder,'repeat-view.png'));
+  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await p.waitForFunction(()=>!aiBusy);
+  assert.ok((await p.locator('#aiDialogStep').textContent()).includes('copie exacte'));
+  assert.ok(await p.locator('#aiAcceptImage').isHidden());await p.locator('#aiCloseDialog').click();
+  assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioCharacter').selectOption({label:'Sujet de vérification'});
-  assert.equal(await p.locator('#studioSources img').count(),3);
+  assert.equal(await p.locator('#studioSources img').count(),4);
   await p.locator('#studioBuild').click();
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
@@ -143,7 +170,7 @@ async function generate(p,prompt,accept=true){
   await p.reload();await p.waitForFunction(()=>workspaceReady);
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   assert.ok(await p.evaluate(()=>project.places[0].img));
-  console.log('PASS trois vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
+  console.log('PASS quatre vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
   console.log('PASS génération sans sélection et avec bibliothèques, deux échecs, insertion, export/import, historique, fermeture et réouverture');
  } finally{await browser?.close();if(server)await stop();fs.rmSync(tmp,{recursive:true,force:true,maxRetries:6,retryDelay:150})}
 })().catch(e=>{console.error(e);process.exitCode=1});

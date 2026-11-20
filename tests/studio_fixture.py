@@ -8,6 +8,7 @@ import struct
 import sys
 import threading
 import zlib
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -16,8 +17,21 @@ sys.path.insert(0,str(folder))
 import serveur_inkforge as app
 
 
-def png(seed, width=960):
+def png(seed, width=960, view=None):
     pixels = random.Random(seed).randbytes(width*width*3)
+    if view:
+        # A recognizable orientation marker in the test raster: eyes, hair and profile nose.
+        pixels=bytearray(pixels)
+        def box(x,y,w,h,color):
+            for row in range(y,y+h):
+                start=3*(row*width+x)
+                pixels[start:start+3*w]=bytes(color)*w
+        box(0,0,100,100,(255,255,255))
+        box(25,20,50,65,(55,32,20) if view=='back' else (220,170,120))
+        if view in ('left','right'):
+            box(15 if view=='left' else 75,50,10,10,(220,170,120))
+        if view in ('front','left'):box(32,40,6,6,(0,0,0))
+        if view in ('front','right'):box(62,40,6,6,(0,0,0))
     def chunk(name,data):
         return struct.pack('>I',len(data))+name+data+struct.pack('>I',zlib.crc32(name+data))
     scanlines = b''.join(b'\0'+pixels[i:i+width*3] for i in range(0,len(pixels),width*3))
@@ -64,6 +78,17 @@ class Provider(BaseHTTPRequestHandler):
         else:
             digest=hashlib.sha256((prompt+''.join(images)).encode()).hexdigest()
             raw=png(digest)
+        if prompt.startswith('Angle demandé'):
+            orientations={'devant le personnage':'front','gauche anatomique':'left','droit anatomique':'right','derrière le personnage':'back'}
+            matches=[v for cue,v in orientations.items() if cue in prompt.split('Dessine une seule vue')[0]]
+            assert len(matches)==1
+            raw=png(digest+uuid.uuid4().hex,view=matches[0])
+            duplicate=folder/'repeat-view.png'
+            if duplicate.exists():
+                raw=duplicate.read_bytes()
+                duplicate.unlink()
+            with (folder/'views.jsonl').open('a',encoding='utf-8') as log:
+                print(json.dumps({'prompt':prompt,'refs':len(images),'sha':hashlib.sha256(raw).hexdigest()}),file=log)
         self.reply({'data':[{'b64_json':base64.b64encode(raw).decode()}]})
 
 

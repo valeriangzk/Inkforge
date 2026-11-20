@@ -201,7 +201,7 @@ async function referenceForAgnes(source){
 async function referenceEntity(item){
  if(!item)return null;
  const {name,description,appearance,colors,proportions,clothing,accessories,notes,model3d}=item;
- const sources=[...new Set([item.portrait,item.views?.side,item.views?.back,...(item.references||[]),item.img].filter(Boolean))].slice(0,5);
+ const sources=[...new Set([item.portrait,item.views?.side,item.views?.right,item.views?.back,...(item.references||[]),item.img].filter(Boolean))].slice(0,5);
  const references=[];
  for(const src of sources)references.push(await referenceForAgnes(src));
  return {name,description,appearance,colors,proportions,clothing,accessories,notes,model3d,references};
@@ -261,7 +261,13 @@ $('installTripo').onclick=async()=>{
  finally{clearInterval(timer);button.disabled=false;$('studioProgress').hidden=true;renderStudio()}
 };
 document.querySelector('[data-tab="studio3d"]').addEventListener('click',()=>tripoReady().catch(e=>{$('tripoStatus').textContent=e.message}));
-const angles={front:'Face',side:'Profil gauche',back:'Dos'};
+// Keep 'side' as the stored left profile for projects created in 2.5.1.
+const angles={
+ front:{label:'Face',direction:'Caméra devant le personnage, à 0°. Visage, torse et pieds tournés vers la caméra. Les deux épaules sont visibles de face.'},
+ side:{label:'Profil gauche',direction:'Caméra du côté gauche anatomique du personnage, à 90°. Profil strict, nez et pieds pointant vers le bord gauche de l’image. Une seule joue visible, épaules superposées.'},
+ right:{label:'Profil droit',direction:'Caméra du côté droit anatomique du personnage, à 90°. Profil strict, nez et pieds pointant vers le bord droit de l’image. Une seule joue visible, épaules superposées.'},
+ back:{label:'Dos',direction:'Caméra directement derrière le personnage, à 180°. Montrer l’arrière de la tête, du vêtement et des talons. Le visage entier est caché, la tête regarde droit devant elle.'}
+};
 function selection3D(){
  const type=$('studioCharacter').value?'characters':'places';
  const id=$(type==='characters'?'studioCharacter':'studioPlace').value;
@@ -272,7 +278,7 @@ function renderStudio(){
  const {type,item}=selection3D(), grid=$('studioSources');grid.replaceChildren();
  const src=source3D(item);
  if(item){
-  for(const [label,url] of [['Image utilisée en 3D',src],['Profil validé',item.views?.side],['Dos validé',item.views?.back]]){
+  for(const [label,url] of [['Image utilisée en 3D',src],...Object.entries(angles).filter(([key])=>key!=='front').map(([key,view])=>[view.label,item.views?.[key]])]){
    if(!url)continue;
    const fig=document.createElement('figure'),img=new Image(),caption=document.createElement('figcaption');
    img.src=url;img.alt=label;img.height=112;caption.textContent=label;fig.append(img,caption);grid.append(fig);
@@ -339,11 +345,18 @@ async function generateCharacterPortrait(character,angle='front') {
    const model=$('agnesModel').value;
    if(!model)throw Error('Aucun modèle image disponible avec cette clé.');
    const place=angle==='place';
-   const prompt=place?'Vue de référence du décor décrit dans la fiche, sujet principal isolé, entièrement visible, perspective trois quarts, lumière uniforme, sans personnage ni texte.':'Illustration de référence pour modéliser le personnage décrit dans la fiche. Une seule personne, corps entier, vue unique '+angles[angle]+', pose debout neutre, bras légèrement écartés, pieds visibles. Fond uni, sans texte. Respecte les traits, les vêtements, les couleurs et les accessoires de la fiche.';
-   const entity={...character,model3d:null};
-   const image=await generateImage(key,model,place?prompt:prompt+' Identité, proportions et tenue identiques aux références. Même cadrage et même lumière.',place?null:entity,place?entity:null,{w:3,h:4});
+   const prompt=place?'Vue de référence du décor décrit dans la fiche, sujet principal isolé, entièrement visible, perspective trois quarts, lumière uniforme, sans personnage ni texte.':'Angle demandé — '+angles[angle].label+'. '+angles[angle].direction+' Dessine une seule vue en pied sur fond uni. Tourne la caméra autour du corps entier. Garde la pose et les détails asymétriques sur leur côté anatomique. Les images jointes définissent l’identité, les couleurs et la tenue, indépendamment de leur orientation.';
+   const entity={...character,model3d:null,views:null};
+   if(!place && angle!=='front'){
+    // Condition on the approved identity, without mixing unlabeled camera angles.
+    entity.portrait=character.views.front;entity.references=[];entity.img='';
+   }
+   const image=await generateImage(key,model,prompt,place?null:entity,place?entity:null,{w:3,h:4});
+   if(!place && Object.entries(character.views||{}).some(([key,url])=>key!==angle && url===image)){
+    throw Error('Agnes a renvoyé la copie exacte d’une autre vue. Les vues validées sont conservées.');
+   }
    aiPending={projectId,characterId:character.id,angle,image};
-   showAi('Référence de '+character.name,'Vérifie l’apparence avant de la garder dans la fiche.',image);
+   showAi('Référence de '+character.name+(place?'':' · '+angles[angle].label),place?'Vérifie l’apparence avant de la garder dans la fiche.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
  }catch(e){showAi('Création de la référence impossible',e.message)}
  finally{aiBusy=false;aiClose.disabled=false}
 }
@@ -556,7 +569,7 @@ document.addEventListener('pointerdown',e=>{if(!contextMenu.contains(e.target))c
 
 </script><script id="visualMemoryLogic">(()=>{'use strict';let editing=null,refs=[];const $m=id=>document.getElementById(id);const overlay=$m('memoryOverlay');function draw(){const grid=$m('memoryRefs');grid.replaceChildren();refs.forEach((src,i)=>{const d=document.createElement('div');d.className='memory-ref';const img=document.createElement('img');img.src=src;img.alt='Référence '+(i+1);const b=document.createElement('button');b.className='btn';b.textContent='Supprimer';b.onclick=()=>{refs.splice(i,1);draw()};d.append(img,b);grid.append(d)});$m('memoryCount').textContent=refs.length+' image(s) de référence enregistrée(s)'}function close(){overlay.classList.remove('open');$m('memoryFiles').value=''}function open(i){editing=i;const c=i===null?{}:project.characters[i];$m('memoryTitle').textContent=i===null?'Créer un personnage — mémoire visuelle':'Mémoire visuelle — '+c.name;$m('memoryName').value=c.name||'';$m('memoryAppearance').value=c.appearance||c.description||'';$m('memoryClothing').value=c.clothing||'';$m('memoryAccessories').value=c.accessories||'';$m('memoryNotes').value=c.notes||'';refs=[...(Array.isArray(c.references)?c.references:(c.img?[c.img]:[]))];draw();overlay.classList.add('open');$m('memoryName').focus()}$m('memoryClose').onclick=close;$m('memoryCancel').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))close()});$m('memoryFiles').onchange=async e=>{const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));for(const f of files){try{refs.push(await fileData(f))}catch(err){notify('Image illisible : '+f.name)}}draw();e.target.value=''};$m('memorySave').onclick=()=>{const name=$m('memoryName').value.trim();if(!name){notify('Indiquez un nom de personnage');return}const appearance=$m('memoryAppearance').value.trim(),clothing=$m('memoryClothing').value.trim(),accessories=$m('memoryAccessories').value.trim(),notes=$m('memoryNotes').value.trim();change(()=>{const old=editing===null?{id:uid()}:project.characters[editing];const item={...old,name,description:appearance,appearance,clothing,accessories,notes,references:[...refs],img:refs[0]||''};if(editing===null)project.characters.push(item);else project.characters[editing]=item});close();notify('Mémoire visuelle enregistrée')};$m('addChar').onclick=()=>open(null);const originalRender=renderLibrary;renderLibrary=function(type){if(type!=='characters')return originalRender(type);const grid=$m('characterGrid');grid.replaceChildren();project.characters.forEach((c,i)=>{const d=document.createElement('div');d.className='item';const src=c.portrait||c.references?.[0]||c.img;if(src){const img=document.createElement('img');img.src=src;img.alt=c.name;d.append(img)}const h=document.createElement('h3');h.textContent=c.name;const info=document.createElement('p');info.className='help';info.textContent=(c.appearance||c.description||'Aucune description')+' • '+(c.references?.length||Number(!!c.img))+' référence(s)';const bar=document.createElement('div');bar.className='toolbar';const edit=document.createElement('button');edit.className='btn';edit.textContent='Ouvrir la mémoire';edit.onclick=()=>open(i);const del=document.createElement('button');del.className='btn';del.textContent='Supprimer';del.onclick=()=>{if(confirm('Supprimer ce personnage et ses références ?'))change(()=>project.characters.splice(i,1))};bar.append(edit);
 const views=document.createElement('div');views.className='toolbar';
-for(const [key,label] of Object.entries(angles)){
+for(const [key,{label}] of Object.entries(angles)){
  const box=document.createElement('div'),btn=document.createElement('button');btn.className='btn';
  const uri=c.views?.[key];if(uri){const preview=new Image();preview.src=uri;preview.alt=label+' validé';preview.height=96;box.append(preview)}
  btn.textContent=(uri?'Régénérer':'Générer')+' · '+label;btn.disabled=key!=='front'&&!c.views?.front;
