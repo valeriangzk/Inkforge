@@ -12,16 +12,37 @@ fs.mkdirSync(control);fs.writeFileSync(path.join(control,'sitecustomize.py'),'im
 const url='http://127.0.0.1:'+(process.env.INKFORGE_MIGRATION_PORT||(process.platform==='win32'?8765:18766));
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let server,closed,context;
-async function stop(){if(!server)return;if(server.exitCode===null&&!server.killed)server.kill();await closed;server=null}
+async function stop(){
+ if(!server)return;
+ if(server.exitCode===null && server.signalCode===null){
+  if(process.platform==='win32'){
+   // A batch file can still have PowerShell and Python running in the fixture directory.
+   cp.spawnSync('taskkill',['/PID',String(server.pid),'/T','/F'],{stdio:'ignore'});
+  }else server.kill();
+ }
+ await closed;
+ server=null;
+}
 async function start(folder,mode){
- const env={...process.env,PYTHONPATH:[control,process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),LOCALAPPDATA:path.join(folder,'test-local'),INKFORGE_MIGRATION_PORT:new URL(url).port};
+ console.log('Ouverture du service de test',mode);
+ const env={...process.env,PYTHONUNBUFFERED:'1',PYTHONPATH:[control,process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),LOCALAPPDATA:path.join(folder,'test-local'),INKFORGE_MIGRATION_PORT:new URL(url).port};
  if(process.platform==='win32'&&mode!=='studio'){
   const assistant=mode==='prepare';
   const cmd=assistant?'MISE_A_JOUR_INKFORGE.cmd':'RESTAURER_INKFORGE.cmd';
   server=cp.spawn('cmd.exe',['/d','/c',cmd,...(assistant?[folder]:[])],{stdio:'inherit',cwd:assistant?dist:folder,env});
  }else server=cp.spawn(python,[path.join(__dirname,'migration_server.py'),folder,mode,path.join(dist,'inkforge-update.zip')],{stdio:'inherit',env});
  closed=once(server,'exit');
- for(let i=0;i<100;i++){try{const r=await fetch(url);await r.arrayBuffer();if(r.ok)return}catch{}await wait(90)}throw Error('Service de migration indisponible');
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  if(server.exitCode!==null || server.signalCode!==null)throw Error('Arrêt du service '+mode+' avant son ouverture ('+(server.exitCode??server.signalCode)+').');
+  try{
+   const r=await fetch(url,{signal:AbortSignal.timeout(1500)});
+   await r.arrayBuffer();
+   if(r.ok)return;
+  }catch{}
+  await wait(200);
+ }
+ throw Error('Le service '+mode+' n’a pas ouvert le port dans le délai de 60 secondes.');
 }
 async function flow(protectedFirst){
  const folder=path.join(tmp,protectedFirst?'protected':'ordinary');fs.mkdirSync(folder);
@@ -70,4 +91,5 @@ async function flow(protectedFirst){
  await context.close();context=null;await stop();console.log('PASS '+(protectedFirst?'assistant de première installation et secours indépendant':'bouton 2.4.2, protection avant effacement et restauration depuis le studio')+' avec les projets et modèles initiaux');
 }
 (async()=>{try{cp.execFileSync(python,[path.join(repo,'tools','prepare_release.py'),dist]);await flow(true);await flow(false)}
+ catch(error){console.error('Échec du parcours de migration',error);throw error}
  finally{await context?.close();await stop();fs.rmSync(tmp,{recursive:true,force:true,maxRetries:5,retryDelay:150})}})().catch(e=>{console.error(e);process.exitCode=1});
