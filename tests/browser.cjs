@@ -39,10 +39,10 @@ async function validateReference(p,trigger,subject,angle){
  // The dialog also opens on failure. Its close button is enabled when generation finishes.
  try{
   await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
-  assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+(angle==='Décor'?'':' · '+angle));
+  assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
   assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
   const preview=await dialog.locator('#aiDialogImage').getAttribute('src');
-  if(angle!=='Décor'){
+  if(!angle.startsWith('Vue ')){
    const request=JSON.parse(fs.readFileSync(path.join(folder,'views.jsonl'),'utf8').trim().split('\n').pop());
    const cues={'Face':'Les deux épaules','Profil gauche':'bord gauche','Profil droit':'bord droit','Dos':'Le visage entier est caché'};
    assert.ok(request.prompt.startsWith('Angle demandé — '+angle+'.')&&request.prompt.includes(cues[angle]));
@@ -88,9 +88,11 @@ async function generate(p,prompt,accept=true){
   assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth===960));
   console.log('PASS cinq originaux de 13 Mo, portrait généré et décodé, sauvegarde');
   await p.locator('[data-tab=places]').click();
-  const answers=['Lieu de vérification','Façade en briques'];
-  p.on('dialog',async dialog=>{if(dialog.type()==='prompt')await dialog.accept(answers.shift());else await dialog.dismiss()});
-  await p.locator('#addPlace').click();await saved(p);
+  await p.locator('#addPlace').click();
+  await p.getByLabel('Nom du décor').fill('Lieu de vérification');
+  await p.getByLabel('Description détaillée du lieu').fill('Façade en briques');
+  assert.ok(await p.locator('#memoryClothing').isHidden());
+  await p.locator('#memorySave').click();await saved(p);
   await p.locator('[data-tab=ai]').click();await p.locator('#listAgnesModels').click();
   await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
   await generate(p,'Scène avec une description seule');
@@ -181,11 +183,42 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.ok(await p.locator('#studioBuild').isDisabled());
-  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Décor');
+  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue principale');
   assert.ok(await p.locator('#studioBuild').isEnabled());
+  await p.locator('[data-tab=places]').click();
+  await p.locator('#placeGrid').getByRole('button',{name:'Ouvrir la fiche'}).click();
+  await p.locator('#memoryFiles').setInputFiles([0,1].map(i=>path.join(folder,'reference'+i+'.png')));
+  await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('2 '));
+  await p.locator('#memorySave').click();await saved(p);
+  const labels={main:'Vue principale',opposite:'Vue opposée',left:'Vue gauche',right:'Vue droite'};
+  for(const light of ['day','night']){
+   await p.locator('#placeGrid select').selectOption(light);
+   for(const [key,label] of Object.entries(labels)){
+    const before=await p.evaluate(()=>project.places[0].placeViews);
+    const trigger=p.locator('#placeGrid').getByRole('button',{name:(before[light]?.[key]?'Régénérer':'Générer')+' · '+label,exact:true});
+    const preview=await validateReference(p,trigger,'Lieu de vérification',label);
+    const call=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
+    assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
+    assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
+    if(light==='night')assert.ok(call.prompt.includes('Image 1 : '+label+' (jour)'));
+    assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{...before,[light]:{...before[light],[key]:preview}});
+   }
+  }
+  const placeViews=await p.evaluate(()=>project.places[0].placeViews);
+  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
+  await p.locator('[data-tab=studio3d]').click();
+  await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
+  assert.equal(await p.locator('#studioSources img').first().getAttribute('src'),placeViews.night.main);
+  await p.locator('[data-tab=ai]').click();
+  await p.locator('#aiPlace').selectOption({label:'Lieu de vérification'});
+  await generate(p,'Paysage de nuit');
+  const sceneCall=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
+  assert.ok(sceneCall.prompt.includes('Éclairage: Nuit')&&sceneCall.refs>0);
   await p.reload();await p.waitForFunction(()=>workspaceReady);
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
-  assert.ok(await p.evaluate(()=>project.places[0].img));
+  assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),placeViews);
+  assert.equal(await p.evaluate(()=>project.places[0].references.length),2);
   console.log('PASS quatre vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
   console.log('PASS génération sans sélection et avec bibliothèques, deux échecs, insertion, export/import, historique, fermeture et réouverture');
  } finally{await browser?.close();if(server)await stop();fs.rmSync(tmp,{recursive:true,force:true,maxRetries:6,retryDelay:150})}

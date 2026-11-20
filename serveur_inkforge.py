@@ -165,9 +165,9 @@ def image_models(data):
 def describe_reference(entity,which):
     if not isinstance(entity,dict): return '',[]
     text=[]
-    for field,label in [('name','Nom'),('description','Description'),('appearance','Apparence'),('colors','Couleurs'),('proportions','Proportions'),('clothing','Vêtements'),('accessories','Accessoires'),('notes','Notes')]:
+    for field,label in [('name','Nom'),('description','Description'),('appearance','Apparence'),('colors','Couleurs'),('proportions','Proportions'),('clothing','Vêtements'),('accessories','Accessoires'),('notes','Notes'),('lighting','Éclairage')]:
         value=entity.get(field)
-        if isinstance(value,str) and value.strip(): text.append(label+': '+value[:450])
+        if isinstance(value,str) and value.strip(): text.append(label+': '+value[:(8000 if which=='Décor' and field=='description' else 450)])
     refs=[]
     sources=list(entity.get('references') or []) if isinstance(entity.get('references'),list) else []
     if not sources and entity.get('img'):sources=[entity['img']]
