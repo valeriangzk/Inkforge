@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.5"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.6"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
 :root{--bg:#0c1018;--panel:#151b26;--line:#293242;--txt:#eef2f7;--muted:#91a0b4;--accent:#8c83ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,Arial}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:210px minmax(0,1fr) 290px;min-height:100vh}aside{background:#111722;padding:17px;border-right:1px solid var(--line)}aside.right{border:0;border-left:1px solid var(--line)}.logo{font-size:23px;font-weight:900;letter-spacing:2px}.logo span{color:var(--accent)}.small,.muted{color:var(--muted);font-size:12px}.nav{display:grid;gap:7px;margin-top:28px}.btn,.nav button{background:#262c3b;border:1px solid #3a4455;border-radius:9px;color:#e1e7f0;padding:10px 12px;text-align:center}.nav button{text-align:left}.nav button.active,.btn.primary{background:var(--accent);color:#10121b;font-weight:750;border-color:transparent}.btn:hover{filter:brightness(1.15)}main{padding:22px;min-width:0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.top h1{margin:0;font-size:24px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:15px 0}.panel h3{margin:0 0 12px}.section{display:none}.section.active{display:block}.page-viewport{overflow:auto;padding:18px;background:#0d121c;border-radius:10px;text-align:center}.page{position:relative;background:#f5f4ef;width:600px;height:820px;margin:auto;box-shadow:0 12px 40px #0008;transform-origin:top left;overflow:hidden;text-align:left}.frame{position:absolute;background:#fff;border:2px solid #141414;overflow:hidden;cursor:move;touch-action:none}.frame.selected{outline:3px solid var(--accent);outline-offset:-3px}.frame img{width:100%;height:100%;object-fit:cover;pointer-events:none}.empty{width:100%;height:100%;display:grid;place-items:center;color:#b3b3b3;font-size:12px}.bubble{position:absolute;background:white;color:#111;border:2px solid #111;border-radius:50%;padding:10px 15px;max-width:85%;min-width:65px;text-align:center;cursor:grab;touch-action:none;white-space:pre-wrap;overflow-wrap:anywhere}.handle{position:absolute;bottom:0;right:0;background:var(--accent);width:16px;height:16px;cursor:nwse-resize;touch-action:none}.field{display:grid;gap:5px;margin:11px 0}.field input,.field textarea,.field select{background:#0d121b;color:white;border:1px solid #344052;border-radius:8px;padding:10px;width:100%}.field textarea{min-height:75px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.item{background:#1b2230;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:hidden}.item img{width:100%;height:145px;object-fit:contain;background:#10151e;border-radius:8px}.item h3{margin:9px 0}.status{background:#1c2432;padding:12px;border-radius:9px;color:#bbc9dd;font-size:12px;line-height:1.5}.hidden{display:none!important}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.preview3d{height:360px;background:radial-gradient(circle,#353e59,#111823);border:1px dashed #59647c;border-radius:12px;display:grid;place-items:center;text-align:center;overflow:hidden}model-viewer{width:100%;height:100%}.help{font-size:12px;color:var(--muted);line-height:1.6}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#303a55;color:white;padding:10px 18px;border-radius:10px;z-index:100;display:none}@media(max-width:1150px){.app{grid-template-columns:170px minmax(0,1fr)}aside.right{grid-column:2;border-left:0;border-top:1px solid var(--line)}}@media(max-width:680px){.app{display:block}aside{padding:12px}.nav{display:flex;overflow:auto;margin-top:12px}.nav button{white-space:nowrap}main{padding:12px}.page-viewport{padding:8px}.top h1{font-size:20px}}@media print{body{background:white}.app>aside,.top,.toolbar,.panel>h3,.help{display:none!important}main{padding:0}.panel,.page-viewport{border:0;padding:0;margin:0;background:white}.page{box-shadow:none;transform:none!important;margin:0;break-after:page}.frame.selected{outline:0}.handle{display:none}}
 
 /* Panneau de clés API, isolé des données de projet */
@@ -222,7 +222,7 @@ const viewAttempts=[];
 function mediaFingerprint(url){
  return typeof url==='string'&&url.match(/^\/media\/([a-f0-9]{64})\./)?.[1]||'—';
 }
-async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false,attempt=null){
+async function generateImage(key,model,prompt,character,place,frame,rejectReferenceCopy=false,attempt=null,img=aiDialogImage){
  const requestId=crypto.randomUUID(), body={requestId,apiKey:key,model,prompt,character:await referenceEntity(character),place:await referenceEntity(place,true),frame};
  let interrupted=false;
  try{await postJSON('/ai/generate',body)}catch(e){if(e.status)throw e;interrupted=true}
@@ -238,8 +238,8 @@ async function generateImage(key,model,prompt,character,place,frame,rejectRefere
  if(rejectReferenceCopy&&result.input_copy)throw Error('Agnes a reproduit une référence à l’identique. Les vues validées sont conservées.');
  if(!mediaURL(result.image))throw Error('Image Agnes AI indisponible.');
  for(let attempt=0;;attempt++){
-  aiDialogImage.removeAttribute('src');aiDialogImage.src=result.image;
-  try{await aiDialogImage.decode();break}
+  img.removeAttribute('src');img.src=result.image;
+  try{await img.decode();break}
   catch{if(attempt>=3)throw Error('Le navigateur ne peut pas lire l’image renvoyée par Agnes AI.');await new Promise(resolve=>setTimeout(resolve,400*(attempt+1)))}
  }
  return result.image;
@@ -430,24 +430,19 @@ async function panoramaView(source,angle,lighting){
  ctx.putImageData(raster,0,0);
  return fileData(await new Promise(resolve=>out.toBlob(resolve,'image/png')));
 }
-async function generateCharacterPortrait(character,angle='front',place=false) {
- if(!place&&angle!=='front'&&!character.views?.front)return showAi('Face à valider','Génère puis valide la vue de face en premier.');
+function viewBlocker(character,angle,place,pendingFront=false){
+ if(!place&&angle!=='front'&&!pendingFront&&!character.views?.front)return ['Face à valider','Génère puis valide la vue de face en premier.'];
  const sphere=place&&angle==='panorama';
  const local=place&&!sphere&&character.panorama;
  if(place&&!sphere&&!local&&character.spatialMode==='panorama'){
-  return showAi('Panorama à préparer','Dans Décors, importe un panorama 360° ou crée-le avec Agnes. Une fois validé, il alimente les quatre vues.');
+  return ['Panorama à préparer','Dans Décors, importe un panorama 360° ou crée-le avec Agnes. Une fois validé, il alimente les quatre vues.'];
  }
- if(!local&&![character.description,character.appearance,character.clothing,character.accessories,character.notes,source3D(character)].some(Boolean))return showAi('Fiche à compléter','Décris la fiche ou ajoute une image de référence.');
-
- if(aiBusy)return;
- const key=agnesKey();
- if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
- const projectId=project.id;
- const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
- viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
- aiPending=null;aiBusy=true;aiClose.disabled=true;
- showAi('Création de la référence','Préparation de la vue depuis la fiche…');
- try{
+ if(!local&&![character.description,character.appearance,character.clothing,character.accessories,character.notes,source3D(character)].some(Boolean))return ['Fiche à compléter','Décris la fiche ou ajoute une image de référence.'];
+ return null;
+}
+async function buildView(character,angle,place,key,attempt,img){
+ const sphere=place&&angle==='panorama';
+ const local=place&&!sphere&&character.panorama;
    if(!local&&!$('agnesModel').value)await loadAiModels(false,true);
    const model=$('agnesModel').value;
    if(!local&&!model)throw Error('Aucun modèle image disponible avec cette clé.');
@@ -487,7 +482,7 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
     // Condition on the approved identity, without mixing unlabeled camera angles.
     entity.portrait=character.views.front;entity.references=[];entity.img='';
    }
-   const image=local?await panoramaView(local,angle,lighting):await generateImage(key,model,prompt,place?null:entity,place?entity:null,sphere?{w:16,h:9,panorama:true}:place?{w:4,h:3}:{w:3,h:4},place&&!sphere&&(angle!=='main'||Boolean(relight)),attempt);
+   const image=local?await panoramaView(local,angle,lighting):await generateImage(key,model,prompt,place?null:entity,place?entity:null,sphere?{w:16,h:9,panorama:true}:place?{w:4,h:3}:{w:3,h:4},place&&!sphere&&(angle!=='main'||Boolean(relight)),attempt,img);
    if(local){attempt.ticket=crypto.randomUUID();attempt.request='Panorama '+mediaFingerprint(local)+' / '+angle+' / '+lighting;attempt.received=mediaFingerprint(image);attempt.count=1}
    if(place&&!local&&character.placeViews?.[otherLighting]?.[angle]===image){
     throw Error('Agnes a renvoyé la même image pour le jour et la nuit. Les vues validées sont conservées.');
@@ -513,7 +508,22 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
      }
     }
    }
-   if(local){aiDialogImage.src=image;await aiDialogImage.decode()}
+   if(local){img.src=image;await img.decode()}
+   return {image,lighting,sphere};
+}
+async function generateCharacterPortrait(character,angle='front',place=false) {
+ const blocked=viewBlocker(character,angle,place);if(blocked)return showAi(...blocked);
+ const local=place&&angle!=='panorama'&&character.panorama;
+ if(aiBusy)return;
+ const key=agnesKey();
+ if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ const projectId=project.id;
+ const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
+ viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
+ aiPending=null;aiBusy=true;aiClose.disabled=true;
+ showAi('Création de la référence','Préparation de la vue depuis la fiche…');
+ try{
+   const {image,lighting,sphere}=await buildView(character,angle,place,key,attempt,aiDialogImage);
    attempt.preview=mediaFingerprint(aiDialogImage.getAttribute('src'));
    attempt.status='Aperçu';
    aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt};
@@ -521,6 +531,110 @@ async function generateCharacterPortrait(character,angle='front',place=false) {
  }catch(e){attempt.status=e.message;showAi('Création de la référence impossible',e.message)}
  finally{aiBusy=false;aiClose.disabled=false}
 }
+
+// Génération des quatre vues : la vue de base d'abord, puis les trois autres en même temps, réparties sur les clés Agnes.
+const agnesKeys=()=>window.inkforgeAgnesKeys?.()||[];
+const viewBatch=document.createElement('div');viewBatch.id='viewBatchDialog';viewBatch.style.cssText='position:fixed;inset:0;background:#000d;z-index:29000;display:none;align-items:center;justify-content:center;padding:18px';
+viewBatch.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="viewBatchTitle" style="width:min(980px,100%);max-height:94vh;overflow:auto;background:#171f2e;border:1px solid #8279dc;border-radius:16px;box-shadow:0 16px 55px #0009;padding:22px;color:#f8f8ff">
+<h2 id="viewBatchTitle" style="margin:0 0 10px">Les quatre vues</h2><p id="viewBatchStep" style="white-space:pre-line;line-height:1.55"></p>
+<div id="viewBatchGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px"></div>
+<div class="toolbar" style="margin-top:16px"><button class="btn" id="viewBatchClose" type="button">Fermer</button></div></div>`;
+document.body.append(viewBatch);
+let currentBatch=null,batchBusy=false;
+function batchDraftView(batch,angle,image){
+ if(batch.place)batch.draft.placeViews={...batch.draft.placeViews,[batch.lighting]:{...batch.draft.placeViews?.[batch.lighting],[angle]:image}};
+ else batch.draft.views={...batch.draft.views,[angle]:image};
+}
+function renderBatch(){
+ const batch=currentBatch;if(!batch)return;
+ const labels=batch.place?placeAngles:angles,firstLabel=labels[batch.first].label;
+ $('viewBatchTitle').textContent='Les quatre vues · '+batch.name;
+ $('viewBatchStep').textContent=!batch.revealed?'Création des quatre vues avec '+(batch.keys.length||1)+(batch.keys.length>1?' clés':' clé')+'… Elles s’afficheront toutes ensemble.':
+  batch.cards[batch.first].validated?'Vérifie chaque vue. Refais celles qui ne conviennent pas, puis valide-les une par une.':'Vérifie chaque vue. Valide d’abord la vue « '+firstLabel+' » : les autres en dépendent.';
+ const grid=$('viewBatchGrid');grid.replaceChildren();
+ for(const card of Object.values(batch.cards)){
+  const box=document.createElement('div');box.dataset.batchView=card.angle;box.style.cssText='border:1px solid #344055;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px';
+  const title=document.createElement('strong');title.textContent=labels[card.angle].label;box.append(title);
+  const info=document.createElement('p');info.className='small';info.style.margin='0';
+  if(card.status==='running')info.textContent='Création en cours…';
+  else if(!batch.revealed)info.textContent=card.status==='done'?'Prête':'En attente de la vue « '+firstLabel+' »…';
+  else if(card.error)info.textContent=card.error;
+  else{
+   const img=new Image();img.src=card.image;img.alt=labels[card.angle].label+' proposée';img.style.cssText='width:100%;border-radius:8px;background:#fff';box.append(img);
+   info.textContent=card.validated?'Validée':'À vérifier';
+  }
+  box.append(info);
+  if(batch.revealed){
+   const actions=document.createElement('div');actions.className='toolbar';
+   const redo=document.createElement('button');redo.className='btn';redo.type='button';redo.textContent='Refaire · '+labels[card.angle].label;
+   redo.disabled=batchBusy;redo.onclick=()=>redoBatchView(card.angle);
+   const ok=document.createElement('button');ok.className='btn primary';ok.type='button';ok.textContent='Valider · '+labels[card.angle].label;
+   ok.disabled=batchBusy||!card.image||card.validated||card.status==='running'||(card.angle!==batch.first&&!batch.cards[batch.first].validated);
+   ok.onclick=()=>validateBatchView(card.angle);
+   actions.append(redo,ok);box.append(actions);
+  }
+  grid.append(box);
+ }
+ $('viewBatchClose').disabled=batchBusy;
+}
+async function runBatchView(batch,angle){
+ const card=batch.cards[angle];
+ const key=batch.keys.length?batch.keys[batch.turn++%batch.keys.length]:'';
+ const attempt={projectId:batch.projectId,itemId:batch.characterId,angle,mode:batch.place?batch.lighting:'',status:'En cours'};
+ viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
+ Object.assign(card,{status:'running',error:'',validated:false,attempt});renderBatch();
+ try{
+  const {image}=await buildView(batch.draft,angle,batch.place,key,attempt,new Image());
+  card.image=image;attempt.preview=mediaFingerprint(image);attempt.status='Aperçu';batchDraftView(batch,angle,image);
+ }catch(e){card.image='';card.error=e.message;attempt.status=e.message}
+ card.status='done';renderBatch();
+}
+async function generateAllViews(character,place){
+ if(aiBusy||batchBusy)return;
+ const first=place?'main':'front';
+ const blocked=viewBlocker(character,first,place);if(blocked)return showAi(...blocked);
+ const local=place&&character.panorama,keys=agnesKeys();
+ if(!keys.length&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ const batch={projectId:project.id,characterId:character.id,name:character.name,place,lighting:character.lighting||'day',first,keys:local?[]:keys,turn:0,draft:clone(character),cards:{},revealed:false};
+ for(const angle of Object.keys(place?placeAngles:angles))batch.cards[angle]={angle,status:'waiting',image:'',error:'',validated:false};
+ currentBatch=batch;batchBusy=aiBusy=true;viewBatch.style.display='flex';renderBatch();
+ try{
+  await runBatchView(batch,first);
+  const others=Object.keys(batch.cards).filter(angle=>angle!==first);
+  if(batch.cards[first].image)await Promise.all(others.map(angle=>runBatchView(batch,angle)));
+  else for(const angle of others)Object.assign(batch.cards[angle],{status:'done',error:'La vue « '+(place?placeAngles:angles)[first].label+' » a échoué. Refais-la d’abord.'});
+  const seen=new Set();
+  for(const card of Object.values(batch.cards)){
+   if(!card.image)continue;
+   if(seen.has(card.image)){card.error='Agnes a renvoyé la copie exacte d’une autre vue. Refais cette vue.';card.image=''}
+   else seen.add(card.image);
+  }
+ }finally{batch.revealed=true;batchBusy=aiBusy=false;renderBatch()}
+}
+async function redoBatchView(angle){
+ const batch=currentBatch;if(!batch||batchBusy)return;
+ batchBusy=aiBusy=true;
+ try{
+  if(angle!==batch.first&&!batch.cards[batch.first].image){batch.cards[angle].error='Refais d’abord la vue « '+(batch.place?placeAngles:angles)[batch.first].label+' ».';return}
+  await runBatchView(batch,angle);
+ }finally{batchBusy=aiBusy=false;renderBatch()}
+}
+async function validateBatchView(angle){
+ const batch=currentBatch,card=batch?.cards[angle];if(!card?.image||batchBusy)return;
+ const character=project[batch.place?'places':'characters'].find(item=>item.id===batch.characterId);
+ if(batch.projectId!==project.id||!character){card.error='Fiche introuvable. Rouvre-la depuis le projet.';return renderBatch()}
+ const previous=clone(project);
+ if(batch.place)character.placeViews={...character.placeViews,[batch.lighting]:{...character.placeViews?.[batch.lighting],[angle]:card.image}};
+ else{character.views={...character.views,[angle]:card.image};if(angle==='front')character.portrait=card.image}
+ if(angle===batch.first)delete character.model3d;
+ batchBusy=true;renderBatch();
+ try{await persist(true)}catch(e){workspace.projects[previous.id]=project=previous;card.error='Vue non enregistrée : '+e.message;batchBusy=false;return renderBatch()}
+ batchBusy=false;
+ card.validated=true;card.attempt.status='Validée';card.attempt.stored=mediaFingerprint(card.image);
+ history.push(previous);if(history.length>60)history.shift();future=[];
+ renderAll();renderBatch();notify('Vue enregistrée dans la fiche');
+}
+$('viewBatchClose').onclick=()=>{if(batchBusy)return;viewBatch.style.display='none';currentBatch=null;renderAll()};
 
 aiAccept.onclick=async()=>{
  if(!aiPending)return;
@@ -619,7 +733,7 @@ window.addEventListener('DOMContentLoaded',openWorkspace);
 // Clés volontairement limitées à la mémoire de l'onglet, hors project et localStorage.
 document.addEventListener('DOMContentLoaded',()=>{
 'use strict';
-const keys=[],byId=id=>document.getElementById(id);window.inkforgeAgnesKey=()=>keys.find(k=>/agn[eè]s/i.test(k.provider||''))?.secret||'';
+const keys=[],byId=id=>document.getElementById(id);window.inkforgeAgnesKey=()=>keys.find(k=>/agn[eè]s/i.test(k.provider||''))?.secret||'';window.inkforgeAgnesKeys=()=>keys.filter(k=>/agn[eè]s/i.test(k.provider||'')).map(k=>k.secret);
 const bottom=byId('apiBottom'),toggle=byId('apiToggle');
 toggle.addEventListener('click',()=>{const open=bottom.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open))});
 function paint(){
@@ -784,6 +898,7 @@ if(place){
  const select=$m('placeLight').cloneNode(true);select.removeAttribute('id');select.value=c.lighting||'day';
  select.onchange=()=>change(()=>{c.lighting=select.value});label.append(select);views.append(label);
 }
+{const all=document.createElement('button');all.className='btn primary';all.type='button';all.textContent='Générer les 4 vues';all.onclick=()=>generateAllViews(c,place);views.append(all)}
 for(const [key,{label}] of Object.entries(place?placeAngles:angles)){
  const box=document.createElement('div'),btn=document.createElement('button');btn.className='btn';
  const uri=activeViews?.[key];box.dataset.view=key;if(uri){const preview=new Image();preview.src=uri;preview.alt=label+' validé';preview.height=96;box.append(preview)}
@@ -818,7 +933,7 @@ diagnostic.ontoggle=()=>{
  report.textContent=lines.join('\n');
 };
 d.append(diagnostic);
-d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.5</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
+d.append(views);if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info,bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.6</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
  'use strict';
  const $=id=>document.getElementById(id),modal=$('inkUpdateDialog'),status=$('inkUpdateStatus');
  const auto=$('inkUpdateAuto'),manual=$('inkUpdateInstall'),restore=$('inkRestore');

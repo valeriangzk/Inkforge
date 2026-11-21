@@ -652,7 +652,7 @@ def generation_ticket(payload, key):
                 del generation_jobs[ident]
         if ticket in generation_jobs:
             return {'ticket':ticket}
-        if sum('ended' not in j for j in generation_jobs.values())>=4:
+        if sum('ended' not in j for j in generation_jobs.values())>=10:
             raise ClientFailure('Plusieurs générations sont en cours. Attends leur fin.',409)
         generation_jobs[ticket]={'pending':True}
         pending_operations += 1

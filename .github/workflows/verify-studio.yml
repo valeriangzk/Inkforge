@@ -38,6 +38,7 @@ jobs:
       - run: python tests/test_updates.py
       - run: python tests/test_engine.py
       - run: node tests/browser.cjs
+      - run: node tests/batch_views.cjs
       - run: node tests/migration.cjs
       - run: python tools/prepare_release.py dist
       - uses: actions/upload-artifact@v4
