@@ -1,0 +1,47 @@
+name: Nettoyer les branches
+on:
+  workflow_dispatch:
+    inputs:
+      inclure_non_fusionnees:
+        description: 'Supprimer aussi les branches dont le travail n’est pas dans main (définitif)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  nettoyer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supprimer les branches inutiles
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          INCLURE: ${{ inputs.inclure_non_fusionnees }}
+        run: |
+          set -euo pipefail
+          defaut=$(gh api "repos/$REPO" --jq .default_branch)
+          ouvertes=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" --jq '.[] | select(.head.repo.full_name == "'"$REPO"'") | .head.ref')
+          resume="$GITHUB_STEP_SUMMARY"
+          echo "## Nettoyage des branches" >> "$resume"
+          echo "" >> "$resume"
+          echo "| Branche | Résultat | Dernier commit (pour restaurer) |" >> "$resume"
+          echo "|---|---|---|" >> "$resume"
+          gh api --paginate "repos/$REPO/branches?per_page=100" --jq '.[] | "\(.name)\t\(.commit.sha)\t\(.protected)"' |
+          while IFS=$'\t' read -r nom sha protegee; do
+            [ "$nom" = "$defaut" ] && continue
+            if [ "$protegee" = true ]; then echo "| \`$nom\` | gardée (protégée) | \`$sha\` |" >> "$resume"; continue; fi
+            if printf '%s\n' "$ouvertes" | grep -qxF "$nom"; then echo "| \`$nom\` | gardée (demande de fusion ouverte) | \`$sha\` |" >> "$resume"; continue; fi
+            code=$(printf '%s' "$nom" | jq -sRr @uri)
+            avance=$(gh api "repos/$REPO/compare/$defaut...$code" --jq .ahead_by)
+            if [ "$avance" != 0 ] && [ "$INCLURE" != true ]; then
+              echo "| \`$nom\` | gardée ($avance modification(s) absente(s) de $defaut) | \`$sha\` |" >> "$resume"; continue
+            fi
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$code" >/dev/null
+            echo "| \`$nom\` | **supprimée** | \`$sha\` |" >> "$resume"
+            echo "Supprimée : $nom ($sha)"
+          done
+          echo "" >> "$resume"
+          echo "Pour restaurer une branche : créer une branche à partir du commit indiqué." >> "$resume"
