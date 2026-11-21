@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publier:
+        description: 'Publier la version dès que les fichiers sont joints'
+        type: boolean
+        default: true
+      notes:
+        description: 'Notes affichées dans la fenêtre de mise à jour'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -78,6 +87,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          PUBLIER: ${{ inputs.publier }}
+          NOTES: ${{ inputs.notes }}
         run: |
           version=$(jq -r .version dist/inkforge-update.json)
           # Lancement manuel depuis main : la version vient de version.json.
@@ -88,10 +99,13 @@ jobs:
             prerelease=""
             case "$TAG" in *-rc.*) prerelease="--prerelease";; esac
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft $target $prerelease \
-              --title "INKFORGE Studio ${TAG#v}" --notes "Mise à jour d’INKFORGE Studio ${TAG#v}."
+              --title "INKFORGE Studio ${TAG#v}" --notes "${NOTES:-Mise à jour d’INKFORGE Studio ${TAG#v}.}"
           fi
           # Une release déjà publiée n'est jamais modifiée (cas du tag créé en publiant le brouillon).
           if [ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" != true ]; then
             echo "Release $TAG déjà publiée : aucun fichier modifié."; exit 0
           fi
           gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$PUBLIER" = true ]; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          fi
