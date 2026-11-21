@@ -7,6 +7,7 @@ import random
 import struct
 import sys
 import threading
+import time
 import zlib
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -59,7 +60,12 @@ class Provider(BaseHTTPRequestHandler):
 
     def do_POST(self):
         assert self.path=='/v1/images/generations'
-        assert self.headers.get('Authorization')=='Bearer test-secret-never-save'
+        auth=self.headers.get('Authorization','')
+        assert auth.startswith('Bearer test-secret-')
+        key=auth[len('Bearer test-secret-'):]
+        started=time.time()
+        if key!='never-save':
+            time.sleep(0.8)  # Clés du test des quatre vues : laisse le temps de vérifier le parallélisme.
         req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         assert req['n']==1
         assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
@@ -73,7 +79,7 @@ class Provider(BaseHTTPRequestHandler):
             assert base64.b64decode(image.split(',',1)[1],validate=True).startswith(b'\xff\xd8\xff')
         prompt=req['prompt']
         with (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
-            print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req))}),file=output)
+            print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req)),'key':key,'start':started,'end':time.time()}),file=output)
         if prompt.startswith('quota-fournisseur'):
             return self.reply({},429)
         if prompt.startswith('image-incomplete'):
