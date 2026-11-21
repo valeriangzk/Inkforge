@@ -22,7 +22,8 @@ async function runBatch(p,grid,labels){
  const before=fs.existsSync(path.join(folder,'metrics.jsonl'))?calls().length:0;
  await p.locator(grid).getByRole('button',{name:'Générer les 4 vues',exact:true}).click();
  const dialog=p.locator('#viewBatchDialog');
- await dialog.waitFor({state:'visible'});
+ await p.waitForFunction(()=>viewBatch.style.display==='flex'||aiDialog.style.display==='flex');
+ if(await p.evaluate(()=>viewBatch.style.display!=='flex'))throw Error('Fenêtre des 4 vues non ouverte : '+await p.locator('#aiDialogTitle').textContent()+' — '+await p.locator('#aiDialogStep').textContent());
  // Tant que les quatre vues ne sont pas prêtes, aucune image n'est affichée.
  let sawWaiting=false;
  for(let i=0;i<200;i++){
@@ -90,6 +91,7 @@ async function runBatch(p,grid,labels){
   await p.locator('[data-tab=places]').click();await p.locator('#addPlace').click();
   await p.getByLabel('Nom du décor').fill('Lieu parallèle');await p.getByLabel('Description détaillée du lieu').fill('Façade en briques');
   await p.locator('#memorySave').click();await p.evaluate(()=>flushWorkspace());
+  await p.locator('#placeGrid').getByRole('button',{name:'Revenir aux vues IA'}).click();await p.evaluate(()=>flushWorkspace());
   const places=await runBatch(p,'#placeGrid',['Vue principale']);
   assert.ok(await dialog.getByRole('button',{name:'Valider · Vue gauche',exact:true}).isDisabled());
   await dialog.getByRole('button',{name:'Valider · Vue principale',exact:true}).click();
