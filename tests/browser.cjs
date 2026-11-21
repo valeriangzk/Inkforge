@@ -32,20 +32,14 @@ async function key(p){
  await p.locator('#apiSecret').fill('test-secret-never-save');
  await p.locator('#addApiKey').click();await p.locator('#apiToggle').click();
 }
-async function openLastResult(p){
- const row=p.locator('#generationRows > div').first();
- await row.getByRole('button',{name:/Voir le résultat|Voir l’erreur/}).click({timeout:90000});
- await p.locator('#aiProgressDialog').waitFor({state:'visible'});
- await p.waitForFunction(()=>!document.getElementById('aiAcceptImage').disabled||document.getElementById('aiAcceptImage').style.display==='none');
-}
 async function validateReference(p,trigger,subject,angle,providerCalls=1){
  const metrics=path.join(folder,'metrics.jsonl');
  const countCalls=()=>fs.existsSync(metrics)?fs.readFileSync(metrics,'utf8').trim().split('\n').length:0;
  const before=countCalls();
- await trigger.click();await openLastResult(p);
+ await trigger.click();
  const dialog=p.locator('#aiProgressDialog');
  await dialog.waitFor({state:'visible'});
- // Both successful results and errors can be opened from the activity panel.
+ // The dialog also opens on failure. Its close button is enabled when generation finishes.
  try{
   await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
   assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
@@ -84,71 +78,11 @@ async function validateReference(p,trigger,subject,angle,providerCalls=1){
 async function generate(p,prompt,accept=true){
  await p.locator('#aiPrompt').fill(prompt);
  await p.locator('#generate').click();
- await openLastResult(p);
+ await p.waitForFunction(()=>!aiBusy);
  if(accept){
    assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth>0));
    await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
  }
-}
-async function checkQueue(p){
- const angles=['Vue de face','Vue de gauche','Vue de droite','Vue opposée'];
- const log=path.join(folder,'queue.jsonl');
- const calls=()=>fs.existsSync(log)?fs.readFileSync(log,'utf8').trim().split('\n').filter(Boolean).map(JSON.parse):[];
- for(const n of [1,2,4]){
-  await p.reload();await p.waitForFunction(()=>workspaceReady);
-  await p.locator('[data-tab=places]').click();
-  await p.locator('#apiToggle').click();
-  for(let i=1;i<=n;i++){
-   await p.locator('#apiSecret').fill('test-queue-private-'+i);await p.locator('#addApiKey').click();
-   fs.writeFileSync(path.join(folder,'hold-'+i),'');
-  }
-  const labels=await p.locator('#apiKeyList').innerText();
-  assert.ok(!labels.includes('private'));for(let i=1;i<=n;i++)assert.ok(labels.includes('K'+i));
-  await p.locator('#apiToggle').click();
-  const before=calls().length;
-  for(const angle of angles)await p.locator('#placeGrid').getByRole('button',{name:new RegExp('générer · '+angle+'$','i')}).click();
-  await p.locator('#placeGrid').getByRole('button',{name:/générer · Vue opposée$/i}).click();
-  assert.equal(await p.locator('#generationRows > div').count(),4);
-  for(let i=0;i<100&&calls().length<before+n;i++)await delay(50);
-  assert.equal(calls().length,before+n);
-  assert.equal(await p.locator('#generationRows [data-state="En attente"]').count(),4-n);
-  await p.locator('#generationPanel summary').click();
-  for(const tab of ['characters','studio3d','editor','projects','ai','places'])await p.locator('[data-tab='+tab+']').click();
-  assert.ok(await p.locator('#aiProgressDialog').isHidden());
-  await p.locator('#generationPanel summary').click();
-  for(let i=n;i>0;i--){
-   fs.unlinkSync(path.join(folder,'hold-'+i));
-   if(n===4)await p.waitForFunction(id=>generationTasks.find(t=>t.keyLabel===id)?.state==='Terminée','K'+i);
-  }
-  await p.waitForFunction(()=>generationTasks.every(t=>t.state==='Terminée'),null,{timeout:30000});
-  const sent=calls().slice(before);assert.equal(sent.length,4);
-  for(const angle of angles){
-   const row=p.locator('#generationRows > div').filter({hasText:angle});
-   const actual=sent.find(call=>call.orientation===angle);assert.ok(actual);
-   assert.ok((await row.innerText()).startsWith(actual.key+' —'));
-   await row.getByRole('button',{name:'Voir le résultat'}).click();
-   assert.ok((await p.locator('#aiDialogTitle').textContent()).endsWith(angle));
-   await p.locator('#aiAcceptImage').click();await saved(p);
-  }
- }
- fs.writeFileSync(path.join(folder,'deny-key'),'');
- await p.locator('#placeGrid').getByRole('button',{name:/générer · Vue de face$/i}).click();
- await p.waitForFunction(()=>generationTasks.at(-1).state==='Échouée');
- assert.equal(await p.evaluate(()=>generationKeys[0].disabled),true);
- await p.locator('#apiToggle').click();
- await p.locator('#apiKeyList button').nth(1).click();
- await p.locator('#apiSecret').fill('test-queue-private-5');await p.locator('#addApiKey').click();
- const ids=await p.locator('#apiKeyList').innerText();
- assert.ok(!ids.includes('K2')&&['K1','K3','K4','K5'].every(id=>ids.includes(id)));
- await p.locator('#apiSecret').fill('test-queue-private-6');await p.locator('#addApiKey').click();
- assert.ok((await p.locator('#apiKeyList').innerText()).includes('K6'));
- await p.locator('#apiToggle').click();await p.locator('[data-tab=projects]').click();
- const download=p.waitForEvent('download');await p.locator('#saveJSON2').click();
- const exported=path.join(tmp,'queue-export.json');await (await download).saveAs(exported);
- for(const file of [exported,log,path.join(folder,'metrics.jsonl'),path.join(folder,'views.jsonl'),path.join(folder,'_inkforge_travail','state.json')]){
-  assert.ok(!fs.readFileSync(file,'utf8').includes('test-queue-private'),path.basename(file));
- }
- console.log('PASS file avec 1, 2 et 4 clés, secrets transmis au fournisseur simulé, ordre inversé, navigation, validation, refus et identifiants stables.');
 }
 (async()=>{
  try{
@@ -166,17 +100,8 @@ async function checkQueue(p){
   await p.locator('[data-tab=places]').click();
   await p.locator('#addPlace').click();
   await p.getByLabel('Nom du décor').fill('Lieu de vérification');
-  const descriptions={main:'Façade en briques',left:'Étagère en cuivre',right:'Fenêtre en ogive',opposite:'Horloge murale'};
-  for(const [key,text] of Object.entries(descriptions))if(key!=='left')await p.locator('#placeText-'+key).fill(text);
+  await p.getByLabel('Description détaillée du lieu').fill('Façade en briques');
   assert.ok(await p.locator('#memoryClothing').isHidden());
-  await p.locator('#memorySave').click();await saved(p);
-  const beforeMissing=fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8');
-  await p.getByRole('button',{name:'Générer · Vue de gauche',exact:true}).click();
-  assert.equal(await p.locator('#aiDialogTitle').textContent(),'Description à compléter');
-  assert.equal(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8'),beforeMissing);
-  await p.locator('#aiCloseDialog').click();
-  await p.getByRole('button',{name:'Ouvrir la fiche'}).click();
-  await p.locator('#placeText-left').fill(descriptions.left);
   await p.locator('#memorySave').click();await saved(p);
   await p.locator('[data-tab=ai]').click();await p.locator('#listAgnesModels').click();
   await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
@@ -254,10 +179,10 @@ async function checkQueue(p){
   const views=await p.evaluate(()=>({...project.characters[0].views}));
   assert.notEqual(views.front,face);assert.equal(await p.evaluate(()=>project.characters[0].portrait),views.front);
   await p.getByRole('button',{name:'Régénérer · Profil gauche'}).click();
-  await openLastResult(p);await p.locator('#aiCloseDialog').click();
+  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   fs.copyFileSync(path.join(media,path.basename(views.front)),path.join(folder,'repeat-view.png'));
-  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await openLastResult(p);
+  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await p.waitForFunction(()=>!aiBusy);
   assert.ok((await p.locator('#aiDialogStep').textContent()).includes('copie exacte'));
   assert.ok(await p.locator('#aiAcceptImage').isHidden());await p.locator('#aiCloseDialog').click();
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
@@ -268,16 +193,16 @@ async function checkQueue(p){
   await p.waitForFunction(()=>document.querySelector('#tripoStatus').textContent.includes('Installer Tripo'));
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.ok(await p.locator('#studioBuild').isDisabled());
-
+  await p.locator('[data-tab=places]').click();await p.getByRole('button',{name:'Revenir aux vues IA'}).click();
   await p.locator('[data-tab=studio3d]').click();
-  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue de face');
+  await validateReference(p,p.locator('#placeReference'),'Lieu de vérification','Vue principale');
   assert.ok(await p.locator('#studioBuild').isEnabled());
   await p.locator('[data-tab=places]').click();
   await p.locator('#placeGrid').getByRole('button',{name:'Ouvrir la fiche'}).click();
   await p.locator('#memoryFiles').setInputFiles([0,1].map(i=>path.join(folder,'reference'+i+'.png')));
   await p.waitForFunction(()=>document.querySelector('#memoryCount').textContent.startsWith('2 '));
   await p.locator('#memorySave').click();await saved(p);
-  const labels={main:'Vue de face',opposite:'Vue opposée',left:'Vue de gauche',right:'Vue de droite'};
+  const labels={main:'Vue principale',opposite:'Vue opposée',left:'Vue gauche',right:'Vue droite'};
   for(const light of ['day','night']){
    await p.locator('#placeGrid select').selectOption(light);
    for(const [key,label] of Object.entries(labels)){
@@ -286,8 +211,7 @@ async function checkQueue(p){
     const preview=await validateReference(p,trigger,'Lieu de vérification',label);
     const call=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
     assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
-    assert.ok(call.refs>0);
-    for(const [direction,text] of Object.entries(descriptions))assert.equal(call.prompt.includes(text),direction===key);
+    assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
     const colors={main:[180,30,30],opposite:[30,170,30],left:[40,40,180],right:[190,160,30]};
     const shown=await p.evaluate(async url=>{
      const image=new Image();image.src=url;await image.decode();
@@ -296,7 +220,7 @@ async function checkQueue(p){
     },preview);
     assert.deepEqual(shown,colors[key].map(v=>light==='night'?Math.floor(v/2):v));
     if(light==='day'&&key!=='main'){
-     assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue de face (jour)'));
+     assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue principale (jour)'));
      assert.ok(call.prompt.includes('nouvelle composition')&&!call.prompt.includes('Reprends le cadrage'));
     }
     if(light==='night')assert.ok(call.prompt.includes('Image 1 : '+label+' (jour)'));
@@ -322,8 +246,8 @@ async function checkQueue(p){
   },beforeEcho.day.main);
   for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
-   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue de gauche'}).click();
-   await openLastResult(p);
+   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+   await p.waitForFunction(()=>!aiBusy);
    assert.ok(await p.locator('#aiAcceptImage').isHidden());
    assert.match(await p.locator('#aiDialogStep').textContent(),/copie exacte|reproduit une référence|même image/);
    await p.locator('#aiCloseDialog').click();
@@ -346,8 +270,8 @@ async function checkQueue(p){
   assert.ok(report.includes('demandes différentes, fichier identique reçu'));
   await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
-  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue de gauche'}).click();
-  await openLastResult(p);await p.locator('#aiCloseDialog').click();
+  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
+  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.equal(await p.locator('#studioSources img').first().getAttribute('src'),placeViews.night.main);
@@ -363,20 +287,10 @@ async function checkQueue(p){
   await p.locator('[data-tab=places]').click();
   await key(p);
   await p.getByRole('button',{name:'Créer le panorama avec Agnes'}).click();
-  await openLastResult(p);
+  await p.waitForFunction(()=>!aiBusy);
   assert.ok((await p.locator('#aiDialogTitle').textContent()).includes('Panorama 360°'));
   await p.locator('#aiAcceptImage').click();await saved(p);
   assert.ok(await p.evaluate(()=>project.places[0].panorama.startsWith('/media/')));
-  await p.getByRole('button',{name:'Ouvrir la fiche'}).click();
-  const revised='Arcade de mosaïque';
-  await p.locator('#placeText-right').fill(revised);
-  await p.locator('#memorySave').click();await saved(p);
-  const beforeRevision=await p.evaluate(()=>project.places[0].placeViews);
-  const newRight=await validateReference(p,p.getByRole('button',{name:'Régénérer · Vue de droite',exact:true}),'Lieu de vérification','Vue de droite');
-  const revisedCall=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
-  assert.ok(revisedCall.prompt.includes(revised)&&Object.values(descriptions).every(text=>!revisedCall.prompt.includes(text)));
-  assert.notEqual(newRight,beforeRevision.night.right);
-  assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{...beforeRevision,night:{...beforeRevision.night,right:newRight}});
   // Cardinal landmarks around a single equirectangular raster, with the rear wall across its seam.
   const panorama=await p.evaluate(()=>{
    const c=document.createElement('canvas');c.width=1024;c.height=512;
@@ -395,7 +309,7 @@ async function checkQueue(p){
    await p.locator('#placeGrid select').selectOption(light);
    for(const [angle,label] of Object.entries(labels)){
     const old=await p.evaluate(()=>project.places[0].placeViews);
-    const url=await validateReference(p,p.getByRole('button',{name:'Cadrer le panorama · '+label,exact:true}),'Lieu de vérification',label,0);
+    const url=await validateReference(p,p.getByRole('button',{name:'Régénérer · '+label,exact:true}),'Lieu de vérification',label,0);
     const rgb=await p.evaluate(async uri=>{
      const img=new Image();img.src=uri;await img.decode();
      const c=document.createElement('canvas'),ctx=c.getContext('2d');ctx.drawImage(img,-480,-360);
@@ -419,7 +333,6 @@ async function checkQueue(p){
   assert.equal(await p.evaluate(()=>project.places[0].model3d),modelId);
   await p.locator('#studioOpen').click();await p.waitForFunction(()=>document.querySelector('#studioProgress').hidden);
   assert.deepEqual(qualities,['preview','final']);
-  await checkQueue(p);
   console.log('PASS panorama local, huit orientations/éclairages, aperçu 3D, qualité finale et réouverture sans reconstruction.');
   console.log('PASS quatre vues indépendantes, régénération annulée, sélection et référence du décor, précontrôle local.');
   console.log('PASS génération sans sélection et avec bibliothèques, deux échecs, insertion, export/import, historique, fermeture et réouverture');

@@ -1,4 +1,4 @@
-INKFORGE Studio 2.7.3 pour Windows
+INKFORGE Studio 2.7.0 pour Windows
 
 Lancer le studio
 Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.
@@ -7,30 +7,13 @@ le dossier _inkforge_travail, à côté du lanceur. Garde ces fichiers ensemble.
 Tu peux aussi exporter un projet JSON avec ses images depuis le studio.
 Les clés API restent dans l’onglet ouvert.
 
-Générations en arrière-plan
-Ajoute tes clés Agnes dans « Clé API ». K1, K2… identifient les clés de cette session.
-Lance les vues souhaitées, puis continue à travailler. Ouvre « Générations IA » en
-haut à droite et choisis « Voir le résultat » pour valider une vue ou remplir une case.
-Garde l’onglet et la fenêtre noire ouverts jusqu’à la validation. Fermer ou recharger
-l’onglet fait perdre la file et les aperçus non validés. Une demande déjà envoyée peut
-être facturée. Une nouvelle tentative se lance uniquement sur demande.
-Le relais accepte quatre générations simultanées au maximum, une par clé, avec une
-limite commune de 20 demandes par minute pour les images 1K. Les limites de ton
-forfait continuent à s’appliquer. En cas de quota atteint la file attend.
-https://agnes-ai.com/doc/terms-of-service
-https://github.com/AgnesAI-Labs/AgnesAI-Models/blob/main/docs/TOKEN_PLAN_FAQ.md
-
-Bibliothèque de décors
-Dans « Ajouter un décor », nomme le lieu et décris séparément ce que voit la
-caméra de face, de gauche, de droite et dans la direction opposée. Enregistre
-la fiche. Choisis Jour ou Nuit puis génère et valide la vue souhaitée.
-Modifier son texte et la régénérer conserve les autres images validées.
-Pour un ancien projet importé, la description unique apparaît en vue de face.
-
-Tu peux aussi importer un panorama à 360° au format 2:1 ou en créer un avec
-Agnes à partir de la fiche complète. Une fois le panorama disponible, le bouton
-« Cadrer le panorama » de chaque vue produit un cadrage local sans crédits.
-Le bouton « Générer » continue à utiliser la description de cette vue.
+Décors panoramiques
+Dans Décors, importe une image équirectangulaire 360° au format 2:1 ou clique
+sur « Créer le panorama avec Agnes ». Cette dernière action utilise ta clé et
+peut consommer des crédits. Vérifie la continuité du lieu avant de valider.
+Les quatre boutons extraient ensuite une vue à 0°, 180°, −90° ou +90° depuis
+le même point, sur ton PC. Nuit applique une teinte atténuée au même lieu.
+« Revenir aux vues IA » donne accès au mode de génération par angle.
 
 Studio 3D
 « Aperçu 3D rapide » calcule une silhouette sur une grille de 96 points par axe.
