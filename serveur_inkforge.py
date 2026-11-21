@@ -517,6 +517,17 @@ media_types = {'png':'image/png','jpg':'image/jpeg','webp':'image/webp','gif':'i
 EMPTY_WORK = {'revision':'0', 'active':'', 'projects':{}, 'histories':{}, 'settings':{}}
 
 
+def retry_locked(action, attempts=8):
+    # Windows (antivirus, indexation) peut verrouiller un fichier juste après son écriture.
+    for attempt in range(attempts):
+        try:
+            return action()
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.1 * (attempt + 1))
+
+
 def write_atomic(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as out:
@@ -526,7 +537,7 @@ def write_atomic(path, data):
             out.write(data)
             out.flush()
             os.fsync(out.fileno())
-        os.replace(tmp, path)
+        retry_locked(lambda: os.replace(tmp, path))
     finally:
         tmp.unlink(missing_ok=True)
 
@@ -919,7 +930,7 @@ class Handler(BaseHTTPRequestHandler):
         if media_pattern.fullmatch(self.path):
             path, mime = media_path(self.path)
             try:
-                return self.send_data(200,path.read_bytes(),mime)
+                return self.send_data(200,retry_locked(path.read_bytes),mime)
             except FileNotFoundError:
                 return self.send_data(404,{'error':'Image absente du projet.'})
         if self.path == '/work/status':
