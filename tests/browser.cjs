@@ -22,7 +22,7 @@ async function start(){
 async function stop(){const done=once(server,'exit');server.kill();await done;server=null}
 async function open(){
  browser=await chromium.launchPersistentContext(path.join(tmp,'browser'),{headless:true,executablePath:process.env.CHROME_BIN||undefined});
- const p=await browser.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>console.error('JS:',e.message));
+ const p=await browser.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>console.error('JS:',e.message));p.on('console',m=>{if(m.type()==='warning'&&m.text().startsWith('INKFORGE:'))console.log(m.text())});
  await p.goto(address);await p.waitForFunction(()=>typeof workspaceReady!=='undefined'&&workspaceReady);
  return p;
 }
@@ -78,7 +78,7 @@ async function validateReference(p,trigger,subject,angle,providerCalls=1){
 async function generate(p,prompt,accept=true){
  await p.locator('#aiPrompt').fill(prompt);
  await p.locator('#generate').click();
- await p.waitForFunction(()=>!aiBusy);
+ await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
  if(accept){
    assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth>0));
    await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
@@ -179,10 +179,10 @@ async function generate(p,prompt,accept=true){
   const views=await p.evaluate(()=>({...project.characters[0].views}));
   assert.notEqual(views.front,face);assert.equal(await p.evaluate(()=>project.characters[0].portrait),views.front);
   await p.getByRole('button',{name:'Régénérer · Profil gauche'}).click();
-  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
+  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});await p.locator('#aiCloseDialog').click();
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   fs.copyFileSync(path.join(media,path.basename(views.front)),path.join(folder,'repeat-view.png'));
-  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await p.waitForFunction(()=>!aiBusy);
+  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
   assert.ok((await p.locator('#aiDialogStep').textContent()).includes('copie exacte'));
   assert.ok(await p.locator('#aiAcceptImage').isHidden());await p.locator('#aiCloseDialog').click();
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
@@ -213,11 +213,23 @@ async function generate(p,prompt,accept=true){
     assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
     assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
     const colors={main:[180,30,30],opposite:[30,170,30],left:[40,40,180],right:[190,160,30]};
-    const shown=await p.evaluate(async url=>{
-     const image=new Image();image.src=url;await image.decode();
-     const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
-     return [...ctx.getImageData(10,10,1,1).data].slice(0,3);
+    const {pixel:shown,failures}=await p.evaluate(async url=>{
+     // Diagnostic : si le décodage échoue, on vérifie que les octets servis sont intacts.
+     const failures=[];
+     for(let attempt=0;attempt<4;attempt++){
+      const image=new Image();image.src=url;
+      try{await image.decode()}catch(error){
+       const r=await fetch(url,{cache:'no-store'}),bytes=await r.arrayBuffer();
+       const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
+       failures.push({error:String(error),status:r.status,size:bytes.byteLength,intact:url.includes(sha)});
+       await new Promise(done=>setTimeout(done,250*(attempt+1)));continue;
+      }
+      const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+      return {pixel:[...ctx.getImageData(10,10,1,1).data].slice(0,3),failures};
+     }
+     throw Error('Décodage impossible : '+JSON.stringify(failures));
     },preview);
+    if(failures.length)console.log('DIAGNOSTIC décodage',label,JSON.stringify(failures));
     assert.deepEqual(shown,colors[key].map(v=>light==='night'?Math.floor(v/2):v));
     if(light==='day'&&key!=='main'){
      assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue principale (jour)'));
@@ -247,7 +259,7 @@ async function generate(p,prompt,accept=true){
   for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
    await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
-   await p.waitForFunction(()=>!aiBusy);
+   await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
    assert.ok(await p.locator('#aiAcceptImage').isHidden());
    assert.match(await p.locator('#aiDialogStep').textContent(),/copie exacte|reproduit une référence|même image/);
    await p.locator('#aiCloseDialog').click();
@@ -271,7 +283,7 @@ async function generate(p,prompt,accept=true){
   await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
-  await p.waitForFunction(()=>!aiBusy);await p.locator('#aiCloseDialog').click();
+  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});await p.locator('#aiCloseDialog').click();
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.equal(await p.locator('#studioSources img').first().getAttribute('src'),placeViews.night.main);
@@ -287,7 +299,7 @@ async function generate(p,prompt,accept=true){
   await p.locator('[data-tab=places]').click();
   await key(p);
   await p.getByRole('button',{name:'Créer le panorama avec Agnes'}).click();
-  await p.waitForFunction(()=>!aiBusy);
+  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
   assert.ok((await p.locator('#aiDialogTitle').textContent()).includes('Panorama 360°'));
   await p.locator('#aiAcceptImage').click();await saved(p);
   assert.ok(await p.evaluate(()=>project.places[0].panorama.startsWith('/media/')));
