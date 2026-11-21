@@ -5,6 +5,7 @@ on:
     tags: ['v*.*.*']
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,7 +36,7 @@ jobs:
           name: inkforge-verifie
           path: dist/
   installation_windows:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -63,7 +64,7 @@ jobs:
                   raise AssertionError('Le runner de test est prévu sans GPU')
               assert studio.warm_engine.process is None
   release_files:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: [studio, installation_windows]
     runs-on: ubuntu-latest
     permissions:
@@ -79,12 +80,18 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           version=$(jq -r .version dist/inkforge-update.json)
+          # Lancement manuel depuis main : la version vient de version.json.
+          target="--verify-tag"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then TAG="v$version"; target="--target $GITHUB_SHA"; fi
           test "${TAG%%-rc.*}" = "v$version"
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             prerelease=""
             case "$TAG" in *-rc.*) prerelease="--prerelease";; esac
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag $prerelease \
-              --title "INKFORGE Studio ${TAG#v}" --notes "Brouillon créé automatiquement. Complète les notes avant de publier."
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft $target $prerelease \
+              --title "INKFORGE Studio ${TAG#v}" --notes "Mise à jour d’INKFORGE Studio ${TAG#v}."
           fi
-          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          # Une release déjà publiée n'est jamais modifiée (cas du tag créé en publiant le brouillon).
+          if [ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" != true ]; then
+            echo "Release $TAG déjà publiée : aucun fichier modifié."; exit 0
+          fi
           gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
