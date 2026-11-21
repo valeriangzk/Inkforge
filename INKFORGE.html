@@ -186,6 +186,7 @@ async function loadReferenceImage(source){
    await new Promise(done=>{if(image.complete)return done();image.onload=image.onerror=done});
   }
   if(image.complete&&image.naturalWidth>0)return image;
+  console.warn('INKFORGE: nouvel essai de lecture d’une image de la fiche',attempt+1,String(source).slice(0,80));
   await new Promise(done=>setTimeout(done,250*(attempt+1)));
  }
  throw Error('Une image de la fiche est introuvable ou illisible. Ouvre la mémoire et remplace-la.');
