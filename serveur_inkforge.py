@@ -144,17 +144,8 @@ def agnes_request(url, key, data=None, max_bytes=12_000_000, timeout=70):
         return json.loads(raw)
     except HTTPError as exc:
         # Do not include raw upstream responses, which might echo private data.
-        messages={402:'Quota ou solde Agnes AI insuffisant.',400:'Requête refusée par Agnes AI (format ou paramètres du modèle).',401:'Clé API Agnes AI invalide.',403:'Accès refusé par Agnes AI : vérifie tes droits ou ton forfait.',404:'Modèle ou point d’accès introuvable chez Agnes AI.',422:'Paramètres d’image non acceptés par ce modèle.',429:'Limite de demandes ou crédit Agnes AI atteint.',500:'Erreur du service Agnes AI.',502:'Service Agnes AI temporairement indisponible.',503:'Service Agnes AI indisponible.'}
-        error=ClientFailure(messages.get(exc.code,'Agnes AI a retourné une erreur HTTP '+str(exc.code)),502)
-        error.provider_status=exc.code
-        delay=exc.headers.get('Retry-After','')
-        if delay.isdigit():
-            error.retry_after=int(delay)
-        elif delay:
-            from email.utils import parsedate_to_datetime
-            try:error.retry_after=max(0,int(parsedate_to_datetime(delay).timestamp()-time.time())+1)
-            except (TypeError,ValueError,OverflowError):pass
-        raise error
+        messages={400:'Requête refusée par Agnes AI (format ou paramètres du modèle).',401:'Clé API Agnes AI invalide.',403:'Accès refusé par Agnes AI : vérifie tes droits ou ton forfait.',404:'Modèle ou point d’accès introuvable chez Agnes AI.',422:'Paramètres d’image non acceptés par ce modèle.',429:'Limite de demandes ou crédit Agnes AI atteint.',500:'Erreur du service Agnes AI.',502:'Service Agnes AI temporairement indisponible.',503:'Service Agnes AI indisponible.'}
+        raise ClientFailure(messages.get(exc.code,'Agnes AI a retourné une erreur HTTP '+str(exc.code)),502)
     except (URLError,TimeoutError,OSError):
         raise ClientFailure('Agnes AI ne répond pas (réseau ou délai dépassé). Réessaie plus tard.',502)
     except (ValueError,UnicodeDecodeError): raise ClientFailure('Réponse Agnes AI illisible.',502)
@@ -526,6 +517,17 @@ media_types = {'png':'image/png','jpg':'image/jpeg','webp':'image/webp','gif':'i
 EMPTY_WORK = {'revision':'0', 'active':'', 'projects':{}, 'histories':{}, 'settings':{}}
 
 
+def retry_locked(action, attempts=8):
+    # Windows (antivirus, indexation) peut verrouiller un fichier juste après son écriture.
+    for attempt in range(attempts):
+        try:
+            return action()
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.1 * (attempt + 1))
+
+
 def write_atomic(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as out:
@@ -535,7 +537,7 @@ def write_atomic(path, data):
             out.write(data)
             out.flush()
             os.fsync(out.fileno())
-        os.replace(tmp, path)
+        retry_locked(lambda: os.replace(tmp, path))
     finally:
         tmp.unlink(missing_ok=True)
 
@@ -635,16 +637,10 @@ def reject_busy():
 # Assign the ticket before calling Agnes. A lost browser connection can only poll this
 # ticket. It never repeats the paid request.
 generation_jobs = {}
-generation_keys=set()
-generation_starts=[]
-generation_pause_until=0
-MIN_QUOTA_PAUSE=60
-IMAGE_RPM=20  # Shared local ceiling for 1K images, independent of the number of keys.
 
 
 def generation_ticket(payload, key):
     global pending_operations
-    key_id=hashlib.sha256(key.encode()).digest()
     ticket = payload.get('requestId')
     if not isinstance(ticket,str) or not re.fullmatch(r'[0-9a-f-]{36}',ticket):
         raise ClientFailure('Identifiant de génération invalide.')
@@ -657,33 +653,19 @@ def generation_ticket(payload, key):
         if ticket in generation_jobs:
             return {'ticket':ticket}
         if sum('ended' not in j for j in generation_jobs.values())>=4:
-            return {'ticket':ticket,'deferred':1}
-        generation_starts[:]=[stamp for stamp in generation_starts if stamp>now-60]
-        wait=generation_pause_until-now
-        if len(generation_starts)>=IMAGE_RPM:
-            wait=max(wait,60+generation_starts[0]-now)
-        if wait>0 or key_id in generation_keys:
-            return {'ticket':ticket,'deferred':max(1,int(wait)+1)}
-        generation_starts.append(now)
-        generation_keys.add(key_id)
+            raise ClientFailure('Plusieurs générations sont en cours. Attends leur fin.',409)
         generation_jobs[ticket]={'pending':True}
         pending_operations += 1
     def run():
-        global pending_operations,generation_pause_until
+        global pending_operations
         try:
             result=send_generate(payload,key)
         except ClientFailure as exc:
-            status=getattr(exc,'provider_status',None)
-            delay=getattr(exc,'retry_after',MIN_QUOTA_PAUSE)
-            result={'error':str(exc),'provider_status':status,'retry_after':max(MIN_QUOTA_PAUSE,delay),'uncertain':status is None and 'délai' in str(exc)}
-            if status in (402,429):
-                with WORK_LOCK:
-                    generation_pause_until=max(generation_pause_until,time.monotonic()+max(MIN_QUOTA_PAUSE,delay))
+            result={'error':str(exc)}
         except Exception:
             result={'error':'Le relais n’a pas pu enregistrer le résultat. Vérifie l’espace disque et la fenêtre noire.'}
         finally:
             with WORK_LOCK:
-                generation_keys.discard(key_id)
                 generation_jobs[ticket]={**result,'ended':time.monotonic()}
                 pending_operations-=1
     try:
@@ -691,7 +673,6 @@ def generation_ticket(payload, key):
     except RuntimeError:
         with WORK_LOCK:
             del generation_jobs[ticket]
-            generation_keys.discard(key_id)
             pending_operations-=1
         raise
     return {'ticket':ticket}
@@ -949,7 +930,7 @@ class Handler(BaseHTTPRequestHandler):
         if media_pattern.fullmatch(self.path):
             path, mime = media_path(self.path)
             try:
-                return self.send_data(200,path.read_bytes(),mime)
+                return self.send_data(200,retry_locked(path.read_bytes),mime)
             except FileNotFoundError:
                 return self.send_data(404,{'error':'Image absente du projet.'})
         if self.path == '/work/status':
@@ -1050,26 +1031,14 @@ class Handler(BaseHTTPRequestHandler):
                 if self.path=='/ai/generate':
                     if 'requestId' in payload:
                         return self.send_data(202,generation_ticket(payload,key))
-                    # Older clients expect a synchronous result. Share admission with ticketed clients.
-                    ticket=str(uuid.uuid4())
-                    admission=generation_ticket({**payload,'requestId':ticket},key)
-                    if admission.get('deferred'):
-                        raise ClientFailure('Capacité ou quota temporairement atteint. Réessaie plus tard.',429)
-                    while True:
-                        with WORK_LOCK:
-                            result=generation_jobs[ticket]
-                        if not result.get('pending'):break
-                        time.sleep(0.25)
-                    if 'error' in result:raise ClientFailure(result['error'],502)
-                    return self.send_data(200,{k:v for k,v in result.items() if k!='ended'})
+                    return self.send_data(200,send_generate(payload,key))
                 models=image_models(agnes_request(AGNES,key,timeout=16))
                 if self.path=='/ai/models':return self.send_data(200,{'data':models})
                 selected=payload.get('model')
                 if selected and selected not in {m['id'] for m in models}:
                     raise ClientFailure('La clé fonctionne, mais le modèle choisi n’est pas disponible pour la génération.')
                 return self.send_data(200,{'connected':True,'models':len(models),'message':'Relais accessible, clé Agnes AI valide, '+str(len(models))+' modèle(s) image détecté(s).'+(' Modèle sélectionné accessible.' if selected else ' Sélectionne ensuite un modèle.')})
-            except ClientFailure as exc:
-                return self.send_data(exc.status,{'error':str(exc),'provider_status':getattr(exc,'provider_status',None),'retry_after':getattr(exc,'retry_after',MIN_QUOTA_PAUSE)})
+            except ClientFailure as exc:return self.send_data(exc.status,{'error':str(exc)})
             except Exception:return self.send_data(500,{'error':'Erreur interne du relais local. Redémarre le studio.'})
         if self.path == '/updates/config':
             if self.headers.get('Origin') not in (f'http://{HOST}:{PORT}', f'http://localhost:{PORT}'):

@@ -27,7 +27,6 @@ jobs:
       - run: npx playwright install chromium
       - run: python tests/test_updates.py
       - run: python tests/test_engine.py
-      - run: python tests/test_generation_queue.py
       - run: node tests/browser.cjs
       - run: node tests/migration.cjs
       - run: python tools/prepare_release.py dist
@@ -79,7 +78,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
           version=$(jq -r .version dist/inkforge-update.json)
           test "${TAG%%-rc.*}" = "v$version"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            prerelease=""
+            case "$TAG" in *-rc.*) prerelease="--prerelease";; esac
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag $prerelease \
+              --title "INKFORGE Studio ${TAG#v}" --notes "Brouillon créé automatiquement. Complète les notes avant de publier."
+          fi
+          test "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
           gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
