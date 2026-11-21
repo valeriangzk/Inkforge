@@ -213,11 +213,23 @@ async function generate(p,prompt,accept=true){
     assert.ok(call.prompt.startsWith(label+'.')&&call.prompt.includes(light==='day'?'Jour :':'Nuit :'));
     assert.ok(call.prompt.includes('Façade en briques')&&call.refs>0);
     const colors={main:[180,30,30],opposite:[30,170,30],left:[40,40,180],right:[190,160,30]};
-    const shown=await p.evaluate(async url=>{
-     const image=new Image();image.src=url;await image.decode();
-     const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
-     return [...ctx.getImageData(10,10,1,1).data].slice(0,3);
+    const {pixel:shown,failures}=await p.evaluate(async url=>{
+     // Diagnostic : si le décodage échoue, on vérifie que les octets servis sont intacts.
+     const failures=[];
+     for(let attempt=0;attempt<4;attempt++){
+      const image=new Image();image.src=url;
+      try{await image.decode()}catch(error){
+       const r=await fetch(url,{cache:'no-store'}),bytes=await r.arrayBuffer();
+       const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
+       failures.push({error:String(error),status:r.status,size:bytes.byteLength,intact:url.includes(sha)});
+       await new Promise(done=>setTimeout(done,250*(attempt+1)));continue;
+      }
+      const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+      return {pixel:[...ctx.getImageData(10,10,1,1).data].slice(0,3),failures};
+     }
+     throw Error('Décodage impossible : '+JSON.stringify(failures));
     },preview);
+    if(failures.length)console.log('DIAGNOSTIC décodage',label,JSON.stringify(failures));
     assert.deepEqual(shown,colors[key].map(v=>light==='night'?Math.floor(v/2):v));
     if(light==='day'&&key!=='main'){
      assert.equal(call.refs,1);assert.ok(call.prompt.includes('Image 1 : Vue principale (jour)'));
