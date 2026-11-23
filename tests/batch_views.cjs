@@ -101,6 +101,52 @@ async function runBatch(p,grid,labels){
   await p.evaluate(()=>flushWorkspace());
   assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{day:{main:places[0],left:places[2]}});
   console.log('PASS quatre vues du décor en parallèle');
+
+  // « Régénérer » lance toujours une vraie génération, différente de la précédente, avec une correction facultative.
+  async function regenerate(grid,label,correction='',expectedCalls=1){
+   const before=calls().length;
+   const field=p.locator(grid).getByLabel('Correction (facultatif) · '+label,{exact:true});
+   await field.fill(correction);
+   await p.locator(grid).getByRole('button',{name:'Régénérer · '+label,exact:true}).click();
+   await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
+   await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+   const title=await p.locator('#aiDialogTitle').textContent();
+   assert.ok(title.startsWith('Référence de '),'Aperçu attendu, obtenu : '+title+' — '+await p.locator('#aiDialogStep').textContent());
+   const made=calls().slice(before);
+   assert.equal(made.length,expectedCalls,'Nombre de générations Agnes pour ce clic');
+   assert.equal(await field.inputValue(),'','Le champ de correction se vide');
+   const image=await p.locator('#aiDialogImage').getAttribute('src');
+   return {image,prompt:made[0]?.prompt,refs:made[0]?.refs};
+  }
+  await dialog.getByRole('button',{name:'Fermer',exact:true}).click();await dialog.waitFor({state:'hidden'});
+  const close=()=>p.locator('#aiCloseDialog').click();
+  await p.locator('[data-tab=characters]').click();
+  const back=await p.evaluate(()=>project.characters[0].views.back);
+  const r1=await regenerate('#characterGrid','Dos','plus de lumière');await close();
+  const r2=await regenerate('#characterGrid','Dos');await close();
+  assert.ok(r1.prompt.includes('Correction demandée pour cette version : plus de lumière.'));
+  assert.ok(!r2.prompt.includes('Correction demandée'));
+  assert.ok(r1.image!==back&&r2.image!==back&&r1.image!==r2.image,'Chaque régénération du personnage donne une image différente');
+
+  await p.locator('[data-tab=places]').click();
+  const d1=await regenerate('#placeGrid','Vue gauche');await close();
+  const d2=await regenerate('#placeGrid','Vue gauche','plus de lumière');await close();
+  assert.ok(d1.image!==places[2]&&d2.image!==places[2]&&d1.image!==d2.image,'Chaque régénération du décor donne une image différente');
+  assert.ok(d2.prompt.includes('plus de lumière'));
+
+  // Décor en mode panorama : « Régénérer » ne se contente plus de redécouper le panorama.
+  await p.evaluate(()=>{const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d');
+   ['#b42','#2a4','#24b','#ba2'].forEach((color,i)=>{x.fillStyle=color;x.fillRect(i*256,0,256,512)});
+   change(()=>{project.places[0].panorama=c.toDataURL('image/png');project.places[0].spatialMode='panorama'})});
+  // Nouveau panorama : le premier clic réextrait la direction sur ce PC, sans Agnes ; on la valide.
+  const extracted=await regenerate('#placeGrid','Vue gauche','',0);
+  await p.locator('#aiAcceptImage').click();await p.waitForFunction(url=>project.places[0].placeViews.day.left===url,extracted.image);
+  const pano1=await regenerate('#placeGrid','Vue gauche');await close();
+  const pano2=await regenerate('#placeGrid','Vue gauche');await close();
+  assert.ok(pano1.image!==extracted.image&&pano2.image!==extracted.image);
+  assert.ok(pano1.prompt.includes('extraite du panorama')&&pano1.refs===1,'Le panorama sert de référence à Agnes');
+  assert.notEqual(pano1.image,pano2.image);
+  console.log('PASS régénération : nouvelle image à chaque clic, correction facultative, décors panorama compris');
   assert.ok(!fs.readFileSync(path.join(folder,'_inkforge_travail','state.json'),'utf8').includes('test-secret-'));
  }catch(error){console.error(error);process.exitCode=1}
  finally{if(browser)await browser.close();if(server){const done=once(server,'exit');server.kill();await done}}
