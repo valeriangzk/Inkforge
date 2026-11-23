@@ -178,7 +178,7 @@ function download(name,content,type){const url=URL.createObjectURL(new Blob([con
 let renderLibrary;
 $('titleInput').onchange=e=>change(()=>project.title=e.target.value.trim()||'Sans titre');$('chapterInput').onchange=e=>change(()=>project.chapter=Math.max(1,Number(e.target.value)||1));$('newProject').onclick=()=>{if(confirm('Créer un nouveau projet vierge ? Le projet actuel restera sauvegardé localement.')){project=fresh();history=[];future=[];page=0;selected=0;persist();renderAll();renderProjects()}};function activateProject(id){let s=loadStore();if(!s[id])return;project=s[id];history=[];future=[];page=0;selected=0;persist();renderAll();renderProjects()}function renderProjects(){const s=loadStore();$('projectList').innerHTML='';Object.values(s).sort((a,b)=>b.updated-a.updated).forEach(p=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<h3>${safeText(p.title)}</h3><p class="help">${p.pages?.length||0} page(s) • ${new Date(p.updated).toLocaleString('fr-FR')}</p><div class="toolbar"><button class="btn" data-open>Ouvrir</button><button class="btn" data-delete>Supprimer</button></div>`;d.querySelector('[data-open]').onclick=()=>activateProject(p.id);d.querySelector('[data-delete]').onclick=()=>{if(confirm('Supprimer ce projet local ?')){delete s[p.id];delete workspace.histories[p.id];if(p.id!==project.id)saveState();if(p.id===project.id){project=Object.values(s)[0]||fresh();workspace.active=s[project.id]?project.id:'';saveState();renderAll()}renderProjects()}};$('projectList').append(d)});renderVersions()}function renderVersions(){const list=(workspace.histories[project.id]||[]);$('versionList').innerHTML='';list.forEach((v,i)=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<h3>Version ${list.length-i}</h3><p class="help">${new Date(v.time).toLocaleString('fr-FR')}</p><button class="btn">Restaurer</button>`;d.querySelector('button').onclick=()=>{if(confirm('Restaurer cette version ?')){commit();project=clone(v.project);persist();renderAll();renderProjects()}};$('versionList').append(d)})}$('saveVersion').onclick=async()=>{try{let list=(workspace.histories[project.id]||[]);list.unshift({time:Date.now(),project:clone(project)});workspace.histories[project.id]=list.slice(0,8);await persist(true);renderVersions();notify('Version enregistrée')}catch(e){notify('Version non enregistrée. '+e.message)}};$('importJSON').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.pages)||!Array.isArray(data.characters)||!Array.isArray(data.places))throw Error('Format de projet incompatible');project={...await translateProject(data,false),id:uid(),updated:Date.now()};page=0;selected=0;history=[];future=[];await persist(true);renderAll();renderProjects();notify('Projet importé')}catch(err){notify('Import impossible : '+err.message)}e.target.value=''};
 function renderAIOptions(){for(const [id,items] of [['aiCharacter',project.characters],['aiPlace',project.places],['studioCharacter',project.characters],['studioPlace',project.places]]){const el=$(id),old=el.value;el.innerHTML='<option value="">Aucun</option>';items.forEach(item=>{let o=document.createElement('option');o.value=item.id;o.textContent=item.name;el.append(o)});el.value=old}renderStudio()}const aiFetch=postJSON;
-async function loadReferenceImage(source){
+async function loadReferenceImage(source,failure='Une image de la fiche est introuvable ou illisible. Ouvre la mémoire et remplace-la.'){
  // Sous Windows, une image tout juste enregistrée peut échouer une première fois au décodage : on réessaie avant d'abandonner.
  for(let attempt=0;attempt<4;attempt++){
   const image=new Image();image.crossOrigin='anonymous';image.src=source;
@@ -189,7 +189,7 @@ async function loadReferenceImage(source){
   console.warn('INKFORGE: nouvel essai de lecture d’une image de la fiche',attempt+1,String(source).slice(0,80));
   await new Promise(done=>setTimeout(done,250*(attempt+1)));
  }
- throw Error('Une image de la fiche est introuvable ou illisible. Ouvre la mémoire et remplace-la.');
+ throw Error(failure);
 }
 async function referenceForAgnes(source){
  if(typeof source==='string' && source.startsWith('https://')){
@@ -404,7 +404,7 @@ async function characterModel(character,build,type='characters'){
 // Perspective projection from a single equirectangular scene. Longitude wraps at the seam.
 async function panoramaView(source,angle,lighting){
  const yaw={main:0,right:Math.PI/2,opposite:Math.PI,left:-Math.PI/2}[angle];
- const img=new Image();img.src=source;await img.decode();
+ const img=await loadReferenceImage(source,'Le panorama est introuvable ou illisible. Importe-le à nouveau.');
  const map=document.createElement('canvas');map.width=Math.min(4096,img.naturalWidth);map.height=map.width>>1;
  const mc=map.getContext('2d');mc.drawImage(img,0,0,map.width,map.height);
  const pixels=mc.getImageData(0,0,map.width,map.height).data;
