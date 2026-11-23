@@ -536,25 +536,27 @@ async function generateCharacterPortrait(character,angle='front',place=false,opt
  if(!agnesKeys().length&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const projectId=project.id,sphere=place&&angle==='panorama';
  const label=sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label;
- const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En attente'};
- viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
  const job=enqueue({label:character.name+' · '+label,local,needsReview:true,
   run:async(key,job)=>{
-   attempt.status='En cours';
+   // Chaque essai (y compris le nouvel essai automatique) a sa propre trace dans le diagnostic.
+   const attempt=job.attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
+   viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
    let built;
-   // Une régénération doit toujours proposer une image différente de la vue actuelle.
-   for(let round=0;round<3;round++){
-    built=await buildView(character,angle,place,key,attempt,new Image(),options);
-    if(!options.forceAI||built.image!==current)break;
-    if(round===2)throw Error('Agnes a renvoyé trois fois la même image. Ajoute une correction et réessaie.');
-   }
+   try{
+    // Une régénération doit toujours proposer une image différente de la vue actuelle.
+    for(let round=0;round<3;round++){
+     built=await buildView(character,angle,place,key,attempt,new Image(),options);
+     if(!options.forceAI||built.image!==current)break;
+     if(round===2)throw Error('Agnes a renvoyé trois fois la même image. Ajoute une correction et réessaie.');
+    }
+   }catch(e){attempt.status=e.message;throw e}
    attempt.preview=mediaFingerprint(built.image);attempt.status='Aperçu';
    return built;
   },
-  onFail:job=>{attempt.status=job.error},
+  onFail:job=>{if(job.attempt)job.attempt.status=job.error},
   view:job=>{
    const {image,lighting}=job.result;
-   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt,job};
+   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt:job.attempt,job};
    showAi('Référence de '+character.name+' · '+label,sphere?'Vérifie que le panorama couvre tout le lieu et que ses bords se raccordent. Les quatre vues seront ensuite extraites sur ce PC.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
   }
  });
