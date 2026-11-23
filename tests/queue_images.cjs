@@ -16,7 +16,7 @@ const port = process.env.INKFORGE_QUEUE_PORT || '18770';
 const address = 'http://127.0.0.1:'+port;
 const delay = ms=>new Promise(r=>setTimeout(r,ms));
 let server,browser;
-const calls=()=>fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
+const calls=()=>{const file=path.join(folder,'metrics.jsonl');return fs.existsSync(file)?fs.readFileSync(file,'utf8').trim().split('\n').filter(Boolean).map(JSON.parse):[]};
 
 
 
