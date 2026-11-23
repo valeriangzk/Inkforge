@@ -1,4 +1,4 @@
-INKFORGE Studio 2.7.10 pour Windows
+INKFORGE Studio 2.7.11 pour Windows
 
 Lancer le studio
 Double-clique sur LANCER_INKFORGE.cmd et laisse la fenêtre noire ouverte.

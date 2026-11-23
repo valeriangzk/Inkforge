@@ -21,13 +21,15 @@ const calls=()=>fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim()
 
 
 const lastCall=()=>calls().at(-1);
+const { settle, preview: queuePreview } = require('./queue_helpers.cjs');
 async function preview(p,button){
- await button.click();
- await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
- await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+ const job=await queuePreview(p,button);
  const title=await p.locator('#aiDialogTitle').textContent();
- assert.ok(/^(Référence de |Aperçu)/.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ assert.ok(/^Référence de /.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ return job;
 }
+// Génération d’une case : l’image part dans l’onglet « Images ».
+async function generatePanel(p){const job=await settle(p,p.locator('#generate'));assert.equal(job.status,'done',job.error);await p.evaluate(()=>flushWorkspace());return job}
 async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await p.evaluate(()=>flushWorkspace())}
 (async()=>{
  try{
@@ -79,7 +81,7 @@ async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitF
   await p.getByRole('button',{name:'Choisir la vue · Vue opposée',exact:true}).click();await ask.waitFor({state:'hidden'});
   assert.ok((await p.locator('#aiPlaceView').textContent()).includes('Vue opposée'));
   await p.locator('#aiPrompt').fill('Rinko assise à son bureau, regardant son PC en souriant');
-  await preview(p,p.locator('#generate'));
+  await generatePanel(p);
   const panel=lastCall();
   assert.ok(panel.prompt.startsWith('Style graphique imposé (« Chibi / comédie »)'));
   const order=['Style graphique imposé','Rinko assise à son bureau','Consignes d’intégration'].map(t=>panel.prompt.indexOf(t));
@@ -87,7 +89,12 @@ async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitF
   assert.ok(panel.prompt.includes('n’en double aucun')&&panel.prompt.includes('c’est le meuble déjà visible dans le décor qui est utilisé'));
   assert.ok(panel.prompt.includes('Vue choisie pour la case : Vue opposée'));
   assert.equal(panel.refs,2,'Seule la vue choisie part comme décor (plus la face de Rinko)');
-  await accept(p);
+  // L’image arrive dans « Images » ; on la place dans la première case.
+  await p.evaluate(()=>{page=0;selected=0});
+  await p.locator('[data-tab=images]').click();
+  await p.getByRole('button',{name:'Placer dans une case · image 1',exact:true}).click();
+  await p.locator('#imageFrame').selectOption('0');await p.locator('#imageConfirm').click();
+  await p.waitForFunction(()=>project.pages[0][0].img);await p.evaluate(()=>flushWorkspace());
   console.log('PASS choix de la vue du décor et consignes contre les meubles dupliqués');
 
   // 5. Rogner l’image d’une case.

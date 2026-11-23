@@ -21,13 +21,15 @@ const calls=()=>fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim()
 
 const keys=async p=>{await p.locator('#apiToggle').click();for(const name of ['a','b']){await p.locator('#apiSecret').fill('test-secret-'+name);await p.locator('#addApiKey').click()}await p.locator('#apiToggle').click()};
 const lastPrompt=()=>calls().at(-1).prompt;
+const { settle, preview: queuePreview } = require('./queue_helpers.cjs');
 async function preview(p,button){
- await button.click();
- await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
- await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+ const job=await queuePreview(p,button);
  const title=await p.locator('#aiDialogTitle').textContent();
- assert.ok(/^(Référence de |Aperçu)/.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ assert.ok(/^Référence de /.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ return job;
 }
+// Génération d’une case : l’image part dans l’onglet « Images ».
+async function generatePanel(p){const job=await settle(p,p.locator('#generate'));assert.equal(job.status,'done',job.error);await p.evaluate(()=>flushWorkspace());return job}
 (async()=>{
  try{
   server=spawn(process.env.PYTHON || 'python',[path.join(__dirname,'studio_fixture.py'),folder],{stdio:'inherit',env:{...process.env,INKFORGE_TEST_PORT:port}});
@@ -36,7 +38,7 @@ async function preview(p,button){
   let p=await browser.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>console.error('JS:',e.message));
   await p.goto(address);await p.waitForFunction(()=>typeof workspaceReady!=='undefined'&&workspaceReady);
   const nav=await p.locator('.nav [data-tab]').evaluateAll(b=>b.map(x=>x.dataset.tab));
-  assert.equal(nav[0],'style','L’onglet Style est en premier');
+  assert.deepEqual(nav.slice(0,2),['projects','style'],'« Projets » juste au-dessus de « Style »');
   assert.ok(nav.indexOf('style')<nav.indexOf('characters')&&nav.indexOf('style')<nav.indexOf('places'));
   await p.evaluate(()=>change(()=>{project.title='Projet style'}));
 
@@ -90,11 +92,8 @@ async function preview(p,button){
   // Une case générée suit le nouveau style.
   await p.locator('[data-tab=ai]').click();
   await p.locator('#aiPrompt').fill('Le héros court dans la ruelle');
-  await p.locator('#generate').click();
-  await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
-  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+  await generatePanel(p);
   assert.ok(lastPrompt().includes('Le héros court dans la ruelle')&&lastPrompt().includes('Style graphique imposé (« Noir et blanc à trames »)'),lastPrompt());
-  await p.locator('#aiCloseDialog').click();
   await p.evaluate(()=>flushWorkspace());
 
   // 4. Fermeture et réouverture : le style et les exemples sont conservés.

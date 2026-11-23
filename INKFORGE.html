@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.10"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>INKFORGE Studio</title><meta name="inkforge-version" content="2.7.11"><!-- Marqueur de compatibilité des anciens installateurs : inkforge-installed-version --><style>
 :root{--bg:#0c1018;--panel:#151b26;--line:#293242;--txt:#eef2f7;--muted:#91a0b4;--accent:#8c83ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,Arial}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:210px minmax(0,1fr) 290px;min-height:100vh}aside{background:#111722;padding:17px;border-right:1px solid var(--line)}aside.right{border:0;border-left:1px solid var(--line)}.logo{font-size:23px;font-weight:900;letter-spacing:2px}.logo span{color:var(--accent)}.small,.muted{color:var(--muted);font-size:12px}.nav{display:grid;gap:7px;margin-top:28px}.btn,.nav button{background:#262c3b;border:1px solid #3a4455;border-radius:9px;color:#e1e7f0;padding:10px 12px;text-align:center}.nav button{text-align:left}.nav button.active,.btn.primary{background:var(--accent);color:#10121b;font-weight:750;border-color:transparent}.btn:hover{filter:brightness(1.15)}main{padding:22px;min-width:0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.top h1{margin:0;font-size:24px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:15px 0}.panel h3{margin:0 0 12px}.section{display:none}.section.active{display:block}.page-viewport{overflow:auto;padding:18px;background:#0d121c;border-radius:10px;text-align:center}.page{position:relative;background:#f5f4ef;width:600px;height:820px;margin:auto;box-shadow:0 12px 40px #0008;transform-origin:top left;overflow:hidden;text-align:left}.frame{position:absolute;background:#fff;border:2px solid #141414;overflow:hidden;cursor:move;touch-action:none}.frame.selected{outline:3px solid var(--accent);outline-offset:-3px}.frame img{width:100%;height:100%;object-fit:cover;pointer-events:none}.empty{width:100%;height:100%;display:grid;place-items:center;color:#b3b3b3;font-size:12px}.bubble{position:absolute;background:white;color:#111;border:2px solid #111;border-radius:50%;padding:10px 15px;max-width:85%;min-width:65px;text-align:center;cursor:grab;touch-action:none;white-space:pre-wrap;overflow-wrap:anywhere}.handle{position:absolute;bottom:0;right:0;background:var(--accent);width:16px;height:16px;cursor:nwse-resize;touch-action:none}.field{display:grid;gap:5px;margin:11px 0}.field input,.field textarea,.field select{background:#0d121b;color:white;border:1px solid #344052;border-radius:8px;padding:10px;width:100%}.field textarea{min-height:75px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.item{background:#1b2230;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:hidden}.item img{width:100%;height:145px;object-fit:contain;background:#10151e;border-radius:8px}.item h3{margin:9px 0}.status{background:#1c2432;padding:12px;border-radius:9px;color:#bbc9dd;font-size:12px;line-height:1.5}.hidden{display:none!important}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.preview3d{height:360px;background:radial-gradient(circle,#353e59,#111823);border:1px dashed #59647c;border-radius:12px;display:grid;place-items:center;text-align:center;overflow:hidden}model-viewer{width:100%;height:100%}.help{font-size:12px;color:var(--muted);line-height:1.6}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#303a55;color:white;padding:10px 18px;border-radius:10px;z-index:100;display:none}@media(max-width:1150px){.app{grid-template-columns:170px minmax(0,1fr)}aside.right{grid-column:2;border-left:0;border-top:1px solid var(--line)}}@media(max-width:680px){.app{display:block}aside{padding:12px}.nav{display:flex;overflow:auto;margin-top:12px}.nav button{white-space:nowrap}main{padding:12px}.page-viewport{padding:8px}.top h1{font-size:20px}}@media print{body{background:white}.app>aside,.top,.toolbar,.panel>h3,.help{display:none!important}main{padding:0}.panel,.page-viewport{border:0;padding:0;margin:0;background:white}.page{box-shadow:none;transform:none!important;margin:0;break-after:page}.frame.selected{outline:0}.handle{display:none}}
 
 /* Panneau de clés API, isolé des données de projet */
@@ -28,8 +28,9 @@ body{padding-bottom:46px}.api-bottom{position:fixed;bottom:0;left:0;right:0;z-in
 .bubble-tail[data-direction="right"]{top:calc(var(--tail-pos) - 20px);right:-37px;transform:rotate(-90deg)}
 .bubble-tail-grip{pointer-events:auto;position:absolute;left:17px;top:21px;width:13px;height:13px;background:#8c83ff;border:1px solid white;border-radius:50%;cursor:grab}
 @media print{.bubble-tail-grip{display:none!important}}
-.bubble[data-shape="oval"]:not(.custom-bubble)::before{display:none!important}.oval-tail-svg circle{filter:drop-shadow(0 1px 2px #0007)}@media print{.oval-tail-svg circle{display:none!important}}</style></head><body><div id="workLoading" role="status" style="position:fixed;inset:0;z-index:40000;background:#121925;color:white;padding:12vh 8vw">Ouverture des projets sur ce PC…</div><div class="app"><aside><div class="logo">INK<span>FORGE</span></div><div class="small">STUDIO DE BD & MANGA</div><div class="nav"><button data-tab="style">✎ Style</button><button class="active" data-tab="editor">▦ Planches</button><button data-tab="characters">♙ Personnages</button><button data-tab="places">◈ Décors</button><button data-tab="studio3d">⬡ Studio 3D</button><button data-tab="projects">▤ Projets</button><button data-tab="ai">✦ Génération IA</button></div><p class="help">Studio vierge • sauvegarde locale automatique. Aucun personnage ni décor de démonstration.</p></aside><main><div class="top"><h1 id="heading">Éditeur de planches</h1><span class="ink-project-title" id="projectName">Sans titre</span><div class="ink-help-top"><button id="inkHelpButton" class="ink-help-button" type="button" aria-label="Ouvrir l’aide rapide" aria-expanded="false" aria-controls="inkHelpPanel">?</button></div></div>
+.bubble[data-shape="oval"]:not(.custom-bubble)::before{display:none!important}.oval-tail-svg circle{filter:drop-shadow(0 1px 2px #0007)}@media print{.oval-tail-svg circle{display:none!important}}</style></head><body><div id="workLoading" role="status" style="position:fixed;inset:0;z-index:40000;background:#121925;color:white;padding:12vh 8vw">Ouverture des projets sur ce PC…</div><div class="app"><aside><div class="logo">INK<span>FORGE</span></div><div class="small">STUDIO DE BD & MANGA</div><div class="nav"><button data-tab="projects">▤ Projets</button><button data-tab="style">✎ Style</button><button class="active" data-tab="editor">▦ Planches</button><button data-tab="characters">♙ Personnages</button><button data-tab="places">◈ Décors</button><button data-tab="ai">✦ Génération IA</button><button data-tab="studio3d">⬡ Studio 3D</button><button data-tab="images">▧ Images</button></div><p class="help">Studio vierge • sauvegarde locale automatique. Aucun personnage ni décor de démonstration.</p></aside><main><div class="top"><h1 id="heading">Éditeur de planches</h1><span class="ink-project-title" id="projectName">Sans titre</span><div class="ink-help-top"><button id="inkHelpButton" class="ink-help-button" type="button" aria-label="Ouvrir l’aide rapide" aria-expanded="false" aria-controls="inkHelpPanel">?</button></div></div>
 <section class="section active" id="editor"><div class="toolbar"><button class="btn" id="prev">←</button><button class="btn" id="next">→</button><button class="btn" id="addPage">+ Page</button><button class="btn" id="removePage">− Page</button><button class="btn" id="addFrame">+ Case</button><button class="btn" id="removeFrame">− Case</button><select class="btn" id="layout"><option value="free">Disposition libre</option><option value="2">2 cases</option><option value="3">3 cases</option><option value="4">4 cases</option><option value="6">6 cases</option></select></div><div class="toolbar"><button class="btn" id="undo">↶ Annuler</button><button class="btn" id="redo">↷ Rétablir</button><button class="btn" id="zoomOut">− Zoom</button><button class="btn" id="zoomIn">+ Zoom</button><button class="btn" id="exportPNG">↓ PNG</button><button class="btn" id="exportPDF">↓ PDF (impression)</button><button class="btn" id="saveJSON">↓ Projet JSON</button></div><div class="panel"><h3 id="pageTitle">Chapitre 1 · Page 1</h3><div class="page-viewport" id="viewport"><div class="page" id="page"></div></div><p class="help">Glissez une case pour la déplacer, tirez son coin violet pour la redimensionner. Les bulles se déplacent séparément. Déposez une image directement sur une case.</p></div></section>
+<section class="section" id="images"><div class="panel"><h3>Images générées</h3><p class="help">Les cases générées dans « Génération IA » arrivent ici. Place-les dans une case, puis rogne-les avec un clic droit sur la case.</p><div class="grid" id="imageGrid"></div></div></section>
 <section class="section" id="style"><div class="panel"><h3>Style du projet</h3><p class="help" id="styleIntro">Le style choisi s’applique à toutes les générations du projet : personnages, décors et cases.</p><p class="help" id="styleStatus" role="status"></p><div class="grid" id="styleGrid"></div></div></section>
 <section class="section" id="characters"><div class="panel"><h3>Bibliothèque de personnages</h3><div class="toolbar"><button class="btn primary" id="addChar">+ Ajouter un personnage</button></div><div class="grid" id="characterGrid"></div></div></section>
 <section class="section" id="places"><div class="panel"><h3>Bibliothèque de décors</h3><div class="toolbar"><button class="btn primary" id="addPlace">+ Ajouter un décor</button></div><div class="grid" id="placeGrid"></div></div></section>
@@ -161,7 +162,7 @@ async function exportProject(){
  try{const snapshot=clone(project);download(filename()+'.json',JSON.stringify(await translateProject(snapshot,true),null,2),'application/json')}
  catch(e){notify('Export impossible. '+e.message)}
 }
-function commit(){history.push(clone(project));if(history.length>60)history.shift();future=[]}function change(fn){commit();fn();persist();renderAll()}function notify(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(notify.t);notify.t=setTimeout(()=>$('toast').style.display='none',2400)}function current(){return project.pages[page]?.[selected]}function selectTab(id){document.querySelector("aside.right").classList.toggle("hidden",id!=="editor");document.querySelector(".app").style.gridTemplateColumns=id==="editor"?"":"210px minmax(0,1fr)";document.querySelectorAll('.section').forEach(e=>e.classList.toggle('active',e.id===id));document.querySelectorAll('[data-tab]').forEach(e=>e.classList.toggle('active',e.dataset.tab===id));$('heading').textContent=({style:'Style',editor:'Éditeur de planches',characters:'Personnages',places:'Décors',studio3d:'Studio 3D',projects:'Projets',ai:'Génération IA'})[id];if(id==='projects')renderProjects();if(id==='ai')renderAIOptions();if(id==='style')renderStyles(true)}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));function safeText(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function renderPage(){const el=$('page');el.innerHTML='';el.style.transform=`scale(${zoom})`;el.parentElement.style.minHeight=(820*zoom+36)+'px';el.parentElement.style.minWidth=(600*zoom+36)+'px';(project.pages[page]||[]).forEach((f,i)=>{const d=document.createElement('div');d.className='frame'+(i===selected?' selected':'');Object.assign(d.style,{left:f.x+'%',top:f.y+'%',width:f.w+'%',height:f.h+'%'});if(f.img){const img=document.createElement('img');img.onerror=()=>{const message=document.createElement('div');message.className='empty';message.textContent='Image indisponible. Importez-la à nouveau ou relancez la génération.';img.replaceWith(message)};img.src=f.img;d.append(img)}else{const empty=document.createElement('div');empty.className='empty';empty.textContent=`Case ${i+1}`;d.append(empty)}if(f.dialogue){const b=document.createElement('div');b.className='bubble';const dialogueSpan=document.createElement('span');dialogueSpan.className='bubble-dialogue';dialogueSpan.textContent=f.dialogue;b.append(dialogueSpan);b.dataset.shape=['oval','rect','shake','shout'].includes(f.bubbleShape)?f.bubbleShape:'oval';b.style.width=(f.bubbleWidth||65)+'%';b.style.minHeight=(f.bubbleHeight??55)+'px';b.style.maxWidth='95%';if(f.bubbleCustom){const custom=(project.bubbleLibrary||[]).find(x=>x.id===f.bubbleCustom);if(custom){b.classList.add("custom-bubble");b.style.backgroundImage=`url("${custom.data}")`;b.style.backgroundSize='100% 100%';b.style.backgroundColor='transparent';b.style.border='0';b.style.borderRadius='0';}}b.style.left=(f.bx??8)+'%';b.style.top=(f.by??8)+'%';d.append(b);if((f.bubbleShape||'oval')==='oval'&&!f.bubbleCustom){
+function commit(){history.push(clone(project));if(history.length>60)history.shift();future=[]}function change(fn){commit();fn();persist();renderAll()}function notify(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(notify.t);notify.t=setTimeout(()=>$('toast').style.display='none',2400)}function current(){return project.pages[page]?.[selected]}function selectTab(id){document.querySelector("aside.right").classList.toggle("hidden",id!=="editor");document.querySelector(".app").style.gridTemplateColumns=id==="editor"?"":"210px minmax(0,1fr)";document.querySelectorAll('.section').forEach(e=>e.classList.toggle('active',e.id===id));document.querySelectorAll('[data-tab]').forEach(e=>e.classList.toggle('active',e.dataset.tab===id));$('heading').textContent=({images:'Images',style:'Style',editor:'Éditeur de planches',characters:'Personnages',places:'Décors',studio3d:'Studio 3D',projects:'Projets',ai:'Génération IA'})[id];if(id==='projects')renderProjects();if(id==='ai')renderAIOptions();if(id==='style')renderStyles(true);if(id==='images')renderImages()}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));function safeText(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function renderPage(){const el=$('page');el.innerHTML='';el.style.transform=`scale(${zoom})`;el.parentElement.style.minHeight=(820*zoom+36)+'px';el.parentElement.style.minWidth=(600*zoom+36)+'px';(project.pages[page]||[]).forEach((f,i)=>{const d=document.createElement('div');d.className='frame'+(i===selected?' selected':'');Object.assign(d.style,{left:f.x+'%',top:f.y+'%',width:f.w+'%',height:f.h+'%'});if(f.img){const img=document.createElement('img');img.onerror=()=>{const message=document.createElement('div');message.className='empty';message.textContent='Image indisponible. Importez-la à nouveau ou relancez la génération.';img.replaceWith(message)};img.src=f.img;d.append(img)}else{const empty=document.createElement('div');empty.className='empty';empty.textContent=`Case ${i+1}`;d.append(empty)}if(f.dialogue){const b=document.createElement('div');b.className='bubble';const dialogueSpan=document.createElement('span');dialogueSpan.className='bubble-dialogue';dialogueSpan.textContent=f.dialogue;b.append(dialogueSpan);b.dataset.shape=['oval','rect','shake','shout'].includes(f.bubbleShape)?f.bubbleShape:'oval';b.style.width=(f.bubbleWidth||65)+'%';b.style.minHeight=(f.bubbleHeight??55)+'px';b.style.maxWidth='95%';if(f.bubbleCustom){const custom=(project.bubbleLibrary||[]).find(x=>x.id===f.bubbleCustom);if(custom){b.classList.add("custom-bubble");b.style.backgroundImage=`url("${custom.data}")`;b.style.backgroundSize='100% 100%';b.style.backgroundColor='transparent';b.style.border='0';b.style.borderRadius='0';}}b.style.left=(f.bx??8)+'%';b.style.top=(f.by??8)+'%';d.append(b);if((f.bubbleShape||'oval')==='oval'&&!f.bubbleCustom){
 // Une seule silhouette SVG fermée : le raccord entre l'ovale et sa pointe ne crée jamais de trait parasite.
 b.style.background='transparent';b.style.border='0';b.style.borderRadius='0';
 const ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.classList.add('oval-tail-svg');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('overflow','visible');svg.style.cssText='position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:0';
@@ -173,7 +174,7 @@ const d=`M ${w*.5} 1.5 C ${w*.79} 1.5 ${w-1.5} ${h*.2} ${w-1.5} ${h*.5} C ${w-1.
 path.setAttribute('d',d);grip.setAttribute('cx',tx);grip.setAttribute('cy',ty)};
 b.append(svg);draw();if(i===selected){drag(grip,(dx,dy)=>{f.ovalTipX=Math.max(-b.clientWidth,Math.min(b.clientWidth*2,(f.ovalTipX??b.clientWidth*.15)+dx));f.ovalTipY=Math.max(-b.clientHeight,Math.min(b.clientHeight*3,(f.ovalTipY??(b.clientHeight+35))+dy));draw()})}
 }if(i===selected){const grip=document.createElement('span');grip.className='bubble-resizer';b.append(grip);drag(grip,(dx,dy)=>{f.bubbleWidth=Math.max(18,Math.min(95,(f.bubbleWidth||65)+dx/d.clientWidth*100));f.bubbleHeight=Math.max(12,Math.min(250,(f.bubbleHeight??55)+dy));b.style.width=f.bubbleWidth+'%';b.style.minHeight=f.bubbleHeight+'px';$('bubbleWidth').value=f.bubbleWidth;$('bubbleHeight').value=f.bubbleHeight})}drag(b,(dx,dy)=>{f.bx=Math.max(0,Math.min(85,(f.bx??8)+dx/d.clientWidth*100));f.by=Math.max(0,Math.min(90,(f.by??8)+dy/d.clientHeight*100));b.style.left=f.bx+'%';b.style.top=f.by+'%'})}if(i===selected){const h=document.createElement('div');h.className='handle';d.append(h);drag(h,(dx,dy)=>{f.w=Math.max(8,Math.min(100-f.x,f.w+dx/el.clientWidth*100));f.h=Math.max(8,Math.min(100-f.y,f.h+dy/el.clientHeight*100));d.style.width=f.w+'%';d.style.height=f.h+'%'})}d.addEventListener('pointerdown',e=>{if(e.target.classList.contains('handle')||e.target.classList.contains('bubble'))return;if(selected!==i){selected=i;renderPage();renderFields()}});drag(d,(dx,dy)=>{f.x=Math.max(0,Math.min(100-f.w,f.x+dx/el.clientWidth*100));f.y=Math.max(0,Math.min(100-f.h,f.y+dy/el.clientHeight*100));d.style.left=f.x+'%';d.style.top=f.y+'%'},e=>e.target===d||e.target.tagName==='IMG'||e.target.classList.contains('empty'));d.addEventListener('dragover',e=>e.preventDefault());d.addEventListener('drop',async e=>{e.preventDefault();const file=e.dataTransfer.files[0];if(file?.type.startsWith('image/')){const src=await fileData(file);change(()=>{project.pages[page][i].img=src;selected=i})}});el.append(d)});$('pageTitle').textContent=`Chapitre ${project.chapter} · Page ${page+1} / ${project.pages.length}`;}
-function drag(el,move,allow=()=>true){el.addEventListener('pointerdown',e=>{if(!allow(e)||e.button!==0)return;e.stopPropagation();e.preventDefault();const ox=e.clientX,oy=e.clientY;let lx=ox,ly=oy,moved=false;el.setPointerCapture(e.pointerId);const onMove=ev=>{const dx=(ev.clientX-lx)/zoom,dy=(ev.clientY-ly)/zoom;if(Math.abs(ev.clientX-ox)+Math.abs(ev.clientY-oy)>3){if(!moved){commit();moved=true}move(dx,dy)}lx=ev.clientX;ly=ev.clientY};const end=()=>{el.removeEventListener('pointermove',onMove);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);if(moved){future=[];persist();renderPage();renderFields()}};el.addEventListener('pointermove',onMove);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)})}function renderFields(){const f=current();const selector=$('selectedLabel');selector.replaceChildren();(project.pages[page]||[]).forEach((frame,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=`Case ${i+1}`;selector.append(option)});if(f)selector.value=String(selected);else{const option=document.createElement('option');option.textContent='Aucune case';option.value='';selector.append(option);selector.value='';}['scene','dialogue','x','y','w','h'].forEach(k=>$(k).value=f?(f[k]??''):'');$('bubbleShape').value=['oval','rect','shake','shout'].includes(f?.bubbleShape)?f.bubbleShape:'oval';$('bubbleWidth').value=f?.bubbleWidth||65;$('bubbleHeight').value=f?.bubbleHeight||55;refreshBubbleLibrary();$('bubbleCustom').value=f?.bubbleCustom||''}function renderAll(){if(page>=project.pages.length)page=project.pages.length-1;if(selected>=project.pages[page].length)selected=Math.max(0,project.pages[page].length-1);$('projectName').textContent=project.title;renderPage();renderFields();renderLibrary('characters');renderLibrary('places');renderAIOptions();$('titleInput').value=project.title;$('chapterInput').value=project.chapter;if(typeof renderStyles==='function')renderStyles()}
+function drag(el,move,allow=()=>true){el.addEventListener('pointerdown',e=>{if(!allow(e)||e.button!==0)return;e.stopPropagation();e.preventDefault();const ox=e.clientX,oy=e.clientY;let lx=ox,ly=oy,moved=false;el.setPointerCapture(e.pointerId);const onMove=ev=>{const dx=(ev.clientX-lx)/zoom,dy=(ev.clientY-ly)/zoom;if(Math.abs(ev.clientX-ox)+Math.abs(ev.clientY-oy)>3){if(!moved){commit();moved=true}move(dx,dy)}lx=ev.clientX;ly=ev.clientY};const end=()=>{el.removeEventListener('pointermove',onMove);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);if(moved){future=[];persist();renderPage();renderFields()}};el.addEventListener('pointermove',onMove);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)})}function renderFields(){const f=current();const selector=$('selectedLabel');selector.replaceChildren();(project.pages[page]||[]).forEach((frame,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=`Case ${i+1}`;selector.append(option)});if(f)selector.value=String(selected);else{const option=document.createElement('option');option.textContent='Aucune case';option.value='';selector.append(option);selector.value='';}['scene','dialogue','x','y','w','h'].forEach(k=>$(k).value=f?(f[k]??''):'');$('bubbleShape').value=['oval','rect','shake','shout'].includes(f?.bubbleShape)?f.bubbleShape:'oval';$('bubbleWidth').value=f?.bubbleWidth||65;$('bubbleHeight').value=f?.bubbleHeight||55;refreshBubbleLibrary();$('bubbleCustom').value=f?.bubbleCustom||''}function renderAll(){if(page>=project.pages.length)page=project.pages.length-1;if(selected>=project.pages[page].length)selected=Math.max(0,project.pages[page].length-1);$('projectName').textContent=project.title;renderPage();renderFields();renderLibrary('characters');renderLibrary('places');renderAIOptions();$('titleInput').value=project.title;$('chapterInput').value=project.chapter;if(typeof renderStyles==='function')renderStyles();if(typeof renderImages==='function')renderImages()}
 $('prev').onclick=()=>{page=Math.max(0,page-1);selected=0;renderAll()};$('next').onclick=()=>{page=Math.min(project.pages.length-1,page+1);selected=0;renderAll()};$('addPage').onclick=()=>change(()=>{project.pages.push(layoutFrames(4));page=project.pages.length-1;selected=0});$('removePage').onclick=()=>{if(project.pages.length===1)return notify('Conservez au moins une page');if(confirm('Supprimer cette page ?'))change(()=>{project.pages.splice(page,1);page=Math.max(0,page-1);selected=0})};$('addFrame').onclick=()=>change(()=>{project.pages[page].push({...blank(),x:12,y:12,w:40,h:25});selected=project.pages[page].length-1});$('removeFrame').onclick=()=>{if(!current())return;if(confirm('Supprimer cette case ?'))change(()=>project.pages[page].splice(selected,1))};$('layout').onchange=e=>{if(e.target.value==='free')return;if(confirm('Appliquer cette disposition ? Les images et textes des cases conservées seront préservés.'))change(()=>{const l=layoutFrames(+e.target.value),old=project.pages[page];project.pages[page]=l.map((f,i)=>({...f,...(old[i]||{}),x:f.x,y:f.y,w:f.w,h:f.h}));selected=0});e.target.value='free'};$('apply').onclick=()=>{if(!current())return;change(()=>{current().scene=$('scene').value;current().dialogue=$('dialogue').value;current().bubbleShape=$('bubbleShape').value;current().bubbleWidth=Number($('bubbleWidth').value);current().bubbleHeight=Number($('bubbleHeight').value);current().bubbleCustom=$('bubbleCustom').value})};$('applyGeometry').onclick=()=>{if(!current())return;change(()=>{let f=current();['x','y','w','h'].forEach(k=>f[k]=Math.max(0,Math.min(100,Number($(k).value)||0)));f.w=Math.max(5,Math.min(f.w,100-f.x));f.h=Math.max(5,Math.min(f.h,100-f.y))})};$('clearImage').onclick=()=>{if(current())change(()=>current().img='')};$('imageInput').onchange=async e=>{const file=e.target.files[0];if(file&&current()){const data=await fileData(file);change(()=>current().img=data);e.target.value=''}};$('undo').onclick=()=>{if(history.length){future.push(clone(project));project=history.pop();persist();renderAll()}};$('redo').onclick=()=>{if(future.length){history.push(clone(project));project=future.pop();persist();renderAll()}};$('zoomIn').onclick=()=>{zoom=Math.min(1.6,+(zoom+.1).toFixed(2));renderPage()};$('zoomOut').onclick=()=>{zoom=Math.max(.4,+(zoom-.1).toFixed(2));renderPage()};document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click()}});
 function download(name,content,type){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}function filename(){return(project.title||'INKFORGE').replace(/[^\p{L}\p{N}_-]+/gu,'_')}$('saveJSON').onclick=$('saveJSON2').onclick=exportProject;$('exportPDF').onclick=()=>{notify('Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF »');setTimeout(()=>window.print(),250)};async function imageForCanvas(src){const img=new Image();img.crossOrigin='anonymous';img.src=src;await img.decode();return img}function roundedBubble(ctx,text,x,y,w){ctx.font='bold 17px system-ui';const lines=[];for(const paragraph of text.split('\n')){let line='';for(const word of paragraph.split(' ')){if(ctx.measureText(line+' '+word).width>w-28&&line){lines.push(line);line=word}else line+=(line?' ':'')+word}lines.push(line)}const height=lines.length*23+20;ctx.fillStyle='white';ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x,y,w,height,Math.min(height/2,35));ctx.fill();ctx.stroke();ctx.fillStyle='#111';lines.forEach((s,i)=>ctx.fillText(s,x+14,y+26+i*23))}async function exportPage(){const c=document.createElement('canvas');c.width=1200;c.height=1640;const ctx=c.getContext('2d');ctx.fillStyle='#f5f4ef';ctx.fillRect(0,0,c.width,c.height);for(const f of project.pages[page]){let x=f.x/100*c.width,y=f.y/100*c.height,w=f.w/100*c.width,h=f.h/100*c.height;ctx.fillStyle='white';ctx.fillRect(x,y,w,h);if(f.img)try{let img=await imageForCanvas(f.img),r=Math.max(w/img.width,h/img.height),iw=img.width*r,ih=img.height*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}catch(e){notify('Une image externe ne peut pas être exportée (CORS)')}ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.strokeRect(x,y,w,h);if(f.dialogue)roundedBubble(ctx,f.dialogue,x+w*(f.bx??8)/100,y+h*(f.by??8)/100,Math.min(w*.75,260))}return c}$('exportPNG').onclick=async()=>{try{let c=await exportPage();c.toBlob(blob=>{if(!blob)return notify('Export PNG impossible');const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=filename()+'_page_'+(page+1)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),2000)})}catch(e){notify('Erreur export : '+e.message)}};
 let renderLibrary;
@@ -526,37 +527,43 @@ async function buildView(character,angle,place,key,attempt,img,options={}){
 }
 async function generateCharacterPortrait(character,angle='front',place=false,options={}) {
  const blocked=viewBlocker(character,angle,place);if(blocked)return showAi(...blocked);
- if(aiBusy)return;
  const current=place?character.placeViews?.[character.lighting||'day']?.[angle]:character.views?.[angle];
  if(place&&angle!=='panorama'&&character.panorama&&options.forceAI){
   // Panorama remplacé depuis la dernière vue : on réextrait d’abord cette direction, sans Agnes.
   try{if(await panoramaView(character.panorama,angle,character.lighting||'day')!==current)options={...options,forceAI:false}}catch{}
  }
- const local=place&&angle!=='panorama'&&character.panorama&&!options.forceAI;
- const key=agnesKey();
- if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
- const projectId=project.id;
- const attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
- viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
- aiPending=null;aiBusy=true;aiClose.disabled=true;
- showAi('Création de la référence','Préparation de la vue depuis la fiche…');
- try{
+ const local=Boolean(place&&angle!=='panorama'&&character.panorama&&!options.forceAI);
+ if(!agnesKeys().length&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ const projectId=project.id,sphere=place&&angle==='panorama';
+ const label=sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label;
+ const job=enqueue({label:character.name+' · '+label,local,needsReview:true,
+  run:async(key,job)=>{
+   // Chaque essai (y compris le nouvel essai automatique) a sa propre trace dans le diagnostic.
+   const attempt=job.attempt={projectId,itemId:character.id,angle,mode:place?(character.lighting||'day'):'',status:'En cours'};
+   viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
    let built;
-   // Une régénération doit toujours proposer une image différente de la vue actuelle.
-   for(let round=0;round<3;round++){
-    built=await buildView(character,angle,place,key,attempt,aiDialogImage,options);
-    if(!options.forceAI||built.image!==current)break;
-    if(round===2)throw Error('Agnes a renvoyé trois fois la même image. Ajoute une correction et réessaie.');
-    aiDialogStep.textContent='Image identique à la précédente : nouvel essai…';
-   }
-   const {image,lighting,sphere}=built;
-   attempt.preview=mediaFingerprint(aiDialogImage.getAttribute('src'));
-   attempt.status='Aperçu';
-   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt};
-   showAi('Référence de '+character.name+(' · '+(sphere?'Panorama 360°':(place?placeAngles:angles)[angle].label)),sphere?'Vérifie que le panorama couvre tout le lieu et que ses bords se raccordent. Les quatre vues seront ensuite extraites sur ce PC.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
- }catch(e){attempt.status=e.message;showAi('Création de la référence impossible',e.message)}
- finally{aiBusy=false;aiClose.disabled=false}
+   try{
+    // Une régénération doit toujours proposer une image différente de la vue actuelle.
+    for(let round=0;round<3;round++){
+     built=await buildView(character,angle,place,key,attempt,new Image(),options);
+     if(!options.forceAI||built.image!==current)break;
+     if(round===2)throw Error('Agnes a renvoyé trois fois la même image. Ajoute une correction et réessaie.');
+    }
+   }catch(e){attempt.status=e.message;throw e}
+   attempt.preview=mediaFingerprint(built.image);attempt.status='Aperçu';
+   return built;
+  },
+  onFail:job=>{if(job.attempt)job.attempt.status=job.error},
+  view:job=>{
+   const {image,lighting}=job.result;
+   aiPending={projectId,characterId:character.id,angle,place,lighting,image,attempt:job.attempt,job};
+   showAi('Référence de '+character.name+' · '+label,sphere?'Vérifie que le panorama couvre tout le lieu et que ses bords se raccordent. Les quatre vues seront ensuite extraites sur ce PC.':place?'Vérifie les ouvertures, le mobilier et l’éclairage avant de valider.':'Vérifie cet angle avant de valider. '+angles[angle].direction,image);
+  }
+ });
+ notify('« '+job.label+' » ajoutée à la file');
+ return job;
 }
+
 
 // Style graphique du projet : ajouté à toutes les générations (fiches, panoramas, cases).
 const artStyles={
@@ -635,19 +642,149 @@ function chooseStyle(id){
  styleAsk.style.display='flex';
 }
 
-// 20 vues en plus d’un décor, générées en arrière-plan : seul l’angle change d’une vue à l’autre.
+// Onglet « Images » : stockage des cases générées, à placer à la main dans une case.
+function renderImages(){
+ const grid=$('imageGrid');if(!grid)return;grid.replaceChildren();
+ const list=project.images||[];
+ if(!list.length){const p=document.createElement('p');p.className='help';p.textContent='Aucune image pour le moment. Lance une génération dans « Génération IA ».';grid.append(p);return}
+ list.forEach((item,index)=>{
+  const card=document.createElement('div');card.className='item';card.dataset.storedImage=item.id;
+  const img=new Image();img.src=item.url;img.alt='Image '+(index+1);img.loading='lazy';
+  const p=document.createElement('p');p.className='help';p.textContent=item.prompt||'';
+  const bar=document.createElement('div');bar.className='toolbar';
+  const place=document.createElement('button');place.type='button';place.className='btn primary';place.textContent='Placer dans une case';place.setAttribute('aria-label','Placer dans une case · image '+(index+1));place.onclick=()=>askPlacement(item);
+  const del=document.createElement('button');del.type='button';del.className='btn';del.textContent='Supprimer';del.setAttribute('aria-label','Supprimer · image '+(index+1));del.onclick=()=>askDeleteImage(item);
+  bar.append(place,del);card.append(img,p,bar);grid.append(card);
+ });
+}
+const imageAsk=document.createElement('div');imageAsk.id='imageDialog';imageAsk.style.cssText='position:fixed;inset:0;background:#000d;z-index:29500;display:none;align-items:center;justify-content:center;padding:18px';
+imageAsk.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="imageAskTitle" style="width:min(520px,100%);background:#171f2e;border:1px solid #8279dc;border-radius:16px;padding:22px;color:#f8f8ff">
+<h2 id="imageAskTitle" style="margin:0 0 10px"></h2><p id="imageAskText" class="help"></p>
+<div id="imagePlaceFields" style="display:flex;gap:12px;margin:10px 0"><label>Planche <select id="imagePage"></select></label><label>Case <select id="imageFrame"></select></label></div>
+<div class="toolbar"><button class="btn primary" id="imageConfirm" type="button"></button><button class="btn" id="imageCancel" type="button">Annuler</button></div></div>`;
+document.body.append(imageAsk);
+$('imageCancel').onclick=()=>{imageAsk.style.display='none'};
+function fillFrames(){const pageIndex=Number($('imagePage').value);$('imageFrame').replaceChildren(...(project.pages[pageIndex]||[]).map((f,i)=>new Option('Case '+(i+1)+(f.img?' (remplacée)':''),i)))}
+$('imagePage').onchange=fillFrames;
+function askPlacement(item){
+ if(!project.pages.some(p=>p.length))return showAi('Aucune case','Ajoute d’abord une case dans l’éditeur de planches.');
+ $('imageAskTitle').textContent='Placer dans une case';$('imageAskText').textContent='Choisis la planche et la case qui recevront cette image.';
+ $('imagePlaceFields').style.display='flex';
+ $('imagePage').replaceChildren(...project.pages.map((p,i)=>new Option('Planche '+(i+1),i)));$('imagePage').value=String(page);fillFrames();
+ if(selected!==null&&project.pages[page]?.[selected])$('imageFrame').value=String(selected);
+ $('imageConfirm').textContent='Placer';
+ $('imageConfirm').onclick=()=>{
+  const pi=Number($('imagePage').value),fi=Number($('imageFrame').value),frame=project.pages[pi]?.[fi];if(!frame)return;
+  change(()=>{frame.img=item.url;delete frame.crop});page=pi;selected=fi;imageAsk.style.display='none';renderAll();notify('Image placée dans la case '+(fi+1)+' de la planche '+(pi+1));
+ };
+ imageAsk.style.display='flex';
+}
+function askDeleteImage(item){
+ $('imageAskTitle').textContent='Supprimer cette image ?';$('imageAskText').textContent='Elle sera retirée du stockage. Les cases où elle est déjà placée la gardent.';
+ $('imagePlaceFields').style.display='none';$('imageConfirm').textContent='Supprimer';
+ $('imageConfirm').onclick=()=>{change(()=>{project.images=(project.images||[]).filter(i=>i.id!==item.id)});imageAsk.style.display='none';renderImages();notify('Image supprimée du stockage')};
+ imageAsk.style.display='flex';
+}
+// File de générations en arrière-plan : rien ne bloque l’écran, les tâches se répartissent sur les clés Agnes.
+const generationQueue=[];let queueTurn=0,queueCollapsed=null; // null : réduit automatiquement quand rien n’attend
+function enqueue(job){
+ Object.assign(job,{id:crypto.randomUUID(),status:'waiting',tries:0,error:''});
+ generationQueue.push(job);queueCollapsed=null;renderQueue();pumpQueue();return job;
+}
+const jobSettled=job=>['done','ready','failed','cancelled'].includes(job.status);
+function pumpQueue(){
+ const limit=Math.max(1,Math.min(10,agnesKeys().length||1));
+ let running=generationQueue.filter(job=>job.status==='running').length;
+ for(const job of generationQueue){
+  if(job.status!=='waiting')continue;
+  if(job.after?.some(dep=>['failed','cancelled'].includes(dep.status))){job.status='failed';job.error=job.afterError||'La tâche précédente a échoué.';job.onFail?.(job);continue}
+  if(job.after?.some(dep=>!['done','ready'].includes(dep.status)))continue;
+  if(running>=limit)break;
+  running++;runJob(job);
+ }
+ renderQueue();
+}
+async function runJob(job){
+ job.status='running';renderQueue();
+ const keys=agnesKeys(),key=job.local?'':keys.length?keys[queueTurn++%keys.length]:'';
+ try{
+  if(!key&&!job.local)throw Error('Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+  const result=await job.run(key,job);
+  if(job.status==='cancelled')return;
+  job.result=result;job.status=job.needsReview?'ready':'done';job.onSuccess?.(result,job);
+ }catch(e){
+  if(job.status==='cancelled')return;
+  job.tries++;job.error=e.message;
+  if(job.tries<2){job.status='waiting'} // une nouvelle tentative automatique
+  else{job.status='failed';job.onFail?.(job)}
+ }finally{renderQueue();pumpQueue()}
+}
+function cancelJob(job){if(job.status==='waiting'||job.status==='running'){job.status='cancelled';job.onCancel?.(job)}}
+function retryJob(job){if(job.status!=='failed')return;Object.assign(job,{status:'waiting',tries:0,error:''});job.onRetry?.(job)}
+const queuePanel=document.createElement('div');queuePanel.id='queuePanel';queuePanel.setAttribute('role','status');
+queuePanel.style.cssText='position:fixed;right:14px;bottom:64px;z-index:9000;max-width:min(360px,calc(100vw - 28px));max-height:46vh;display:none;flex-direction:column;background:#182131e8;border:1px solid #69728d;border-radius:12px;box-shadow:0 10px 30px #0008;font-size:13px;pointer-events:none';
+const queueStyle=document.createElement('style');queueStyle.textContent='#queuePanel button{pointer-events:auto}';document.head.append(queueStyle);
+document.body.append(queuePanel);
+function queueStatus(job){
+ return {waiting:'en attente',running:'en cours…',ready:'prête à vérifier',done:job.reviewed?'validée':'terminée',failed:'échec : '+job.error,cancelled:'annulée'}[job.status];
+}
+function renderQueue(){
+ const visible=generationQueue.filter(job=>!job.hidden);
+ queuePanel.style.display=visible.length?'flex':'none';
+ if(!visible.length)return queuePanel.replaceChildren();
+ const running=visible.filter(j=>j.status==='running').length,waiting=visible.filter(j=>j.status==='waiting').length;
+ const finished=visible.filter(j=>['done','ready'].includes(j.status)).length;
+ const needsEye=visible.some(j=>j.status==='ready'&&!j.reviewed||j.status==='failed');
+ const collapsed=queueCollapsed??(!running&&!waiting&&!needsEye);
+ const head=document.createElement('div');head.style.cssText='display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #344055';
+ const title=document.createElement('strong');title.id='queueSummary';title.style.flex='1';
+ title.textContent='Générations : '+finished+'/'+visible.length+(running?' · '+running+' en cours':'')+(waiting?' · '+waiting+' en attente':'');
+ const fold=document.createElement('button');fold.type='button';fold.className='btn';fold.textContent=collapsed?'Afficher':'Réduire';fold.onclick=()=>{queueCollapsed=!collapsed;renderQueue()};
+ const clear=document.createElement('button');clear.type='button';clear.className='btn';clear.textContent='Effacer les terminées';
+ clear.onclick=()=>{for(const job of generationQueue)if(['done','cancelled'].includes(job.status)&&(!job.group||generationQueue.filter(j=>j.group===job.group).every(j=>['done','cancelled'].includes(j.status))))job.hidden=true;renderQueue()};
+ if(collapsed)head.append(title,fold);else head.append(title,clear,fold);
+ const list=document.createElement('div');list.id='queueList';list.style.cssText='overflow:auto;padding:6px 10px;display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:6px';
+ const groups=new Set();
+ for(const job of visible){
+  const line=document.createElement('div');line.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap';
+  const text=document.createElement('span');text.style.flex='1';
+  const add=(label,aria,fn)=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=label;b.setAttribute('aria-label',aria);b.onclick=fn;line.append(b)};
+  if(job.group){
+   if(groups.has(job.group))continue;groups.add(job.group);
+   const jobs=visible.filter(j=>j.group===job.group),done=jobs.filter(j=>['done','ready'].includes(j.status)).length,failed=jobs.filter(j=>j.status==='failed').length;
+   const pending=jobs.some(j=>j.status==='waiting'||j.status==='running'),cancelled=jobs.some(j=>j.status==='cancelled');
+   line.dataset.queueGroup=job.group.id;
+   text.textContent=job.group.label+' : '+done+'/'+jobs.length+(failed?' · '+failed+' échec'+(failed>1?'s':''):'')+(cancelled&&!pending?' · annulé':'')+(!pending&&!cancelled&&!failed?' · terminé':'');
+   line.append(text);
+   if(job.group.view)add('Voir','Voir · '+job.group.label,job.group.view);
+   if(pending)add('Annuler',job.group.cancelLabel||'Annuler · '+job.group.label,()=>{jobs.forEach(cancelJob);job.group.onCancel?.();renderQueue();pumpQueue()});
+   if(failed&&!pending)add('Réessayer','Réessayer · '+job.group.label,()=>{jobs.forEach(retryJob);renderQueue();pumpQueue()});
+  }else{
+   line.dataset.queueJob=job.id;
+   text.textContent=job.label+' — '+queueStatus(job);
+   line.append(text);
+   if(job.view&&(job.status==='ready'||job.status==='done'))add('Voir','Voir · '+job.label,()=>job.view(job));
+   if(job.status==='waiting'||job.status==='running')add('Annuler','Annuler · '+job.label,()=>{cancelJob(job);renderQueue();pumpQueue()});
+   if(job.status==='failed')add('Réessayer','Réessayer · '+job.label,()=>{retryJob(job);renderQueue();pumpQueue()});
+  }
+  list.append(line);
+ }
+ queuePanel.replaceChildren(head,list);
+ for(const el of document.querySelectorAll('[data-extra-progress]')){const job=extraJobs[el.dataset.extraProgress];el.textContent=job&&!job.finished?'Vues en plus : '+job.done+'/'+job.total:''}
+}
+// 20 vues en plus d’un décor, dans la file : seul l’angle change d’une vue à l’autre.
 const EXTRA_COUNT=20;
 const extraJobs={};
 function extraAngles(count=EXTRA_COUNT){
  const spots=['depuis le coin avant gauche','depuis le coin avant droit','depuis le coin du fond à gauche','depuis le coin du fond à droite','depuis l’entrée du lieu','depuis le centre du lieu','depuis le côté gauche','depuis le côté droit'];
  const heights=['à hauteur d’une personne assise','à hauteur des yeux, debout','en hauteur, en légère plongée','vue haute, en plongée marquée','près du sol, en légère contre-plongée'];
  const targets=['vers le meuble principal du lieu','vers la fenêtre ou la source de lumière','vers l’entrée','vers le coin le plus meublé','vers l’élément le plus caractéristique décrit dans la fiche','vers le centre du lieu'];
- const frames=[['plan large','montrant la plus grande partie du lieu'],['plan moyen','sur une zone riche en objets'],['plan serré','sur un coin chargé d’objets intéressants']];
+ const frames=[['Plan large','montrant la plus grande partie du lieu'],['Plan moyen','sur une zone riche en objets'],['Plan serré','sur un coin chargé d’objets intéressants']];
  const pick=list=>list[Math.floor(Math.random()*list.length)];
  const result=new Set();
  for(let i=0;result.size<count&&i<1000;i++){
   const [shot,detail]=frames[result.size<8?0:result.size<16?1:2];
-  result.add(shot.charAt(0).toUpperCase()+shot.slice(1)+' '+detail+', vu '+pick(spots).replace(/^depuis /,'depuis ')+', '+pick(heights)+', '+pick(targets));
+  result.add(shot+' '+detail+', vu '+pick(spots)+', '+pick(heights)+', '+pick(targets));
  }
  return [...result].sort(()=>Math.random()-0.5);
 }
@@ -661,55 +798,38 @@ function extraOwner(job){
  const proj=project.id===job.projectId?project:workspace.projects[job.projectId];
  return proj?.places.find(item=>item.id===job.placeId);
 }
-function showExtraProgress(){
- let badge=$('extraViewsBadge');
- if(!badge){badge=document.createElement('div');badge.id='extraViewsBadge';badge.setAttribute('role','status');badge.style.cssText='position:fixed;right:14px;bottom:64px;z-index:9000;display:flex;flex-direction:column;gap:6px';document.body.append(badge)}
- badge.replaceChildren();
- for(const job of Object.values(extraJobs)){
-  const line=document.createElement('div');line.dataset.extraJob=job.placeId;line.style.cssText='background:#202a3a;border:1px solid #69728d;border-radius:9px;padding:6px 10px;font-size:13px;display:flex;gap:8px;align-items:center';
-  const text=document.createElement('span');
-  text.textContent='« '+job.name+' » : '+job.done+'/'+job.total+(job.failed?' · '+job.failed+' échec'+(job.failed>1?'s':''):'')+(job.cancelled?' · annulé':'')+(job.finished?' · terminé':'');
-  line.append(text);
-  if(!job.finished){const stop=document.createElement('button');stop.type='button';stop.className='btn';stop.textContent='Annuler';stop.setAttribute('aria-label','Annuler les vues de '+job.name);stop.onclick=()=>{job.cancelled=true;showExtraProgress()};line.append(stop)}
-  else{const close=document.createElement('button');close.type='button';close.className='btn';close.textContent='×';close.setAttribute('aria-label','Masquer');close.onclick=()=>{delete extraJobs[job.placeId];showExtraProgress()};line.append(close)}
-  badge.append(line);
- }
- for(const el of document.querySelectorAll('[data-extra-progress]')){const job=extraJobs[el.dataset.extraProgress];el.textContent=job&&!job.finished?'Vues en plus : '+job.done+'/'+job.total:''}
-}
 async function generateExtraViews(place){
  if(extraJobs[place.id]&&!extraJobs[place.id].finished)return;
- const keys=agnesKeys();
- if(!keys.length)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ if(!agnesKeys().length)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const lighting=place.lighting||'day',main=place.placeViews?.[lighting]?.main;
  if(!main)return showAi('Vue principale à valider','Génère et valide d’abord la vue principale de ce décor : les 20 vues en partent.');
  if(!$('agnesModel').value)await loadAiModels(false,true);
  const model=$('agnesModel').value;if(!model)return showAi('Modèle manquant','Aucun modèle image disponible avec cette clé.');
- const others=Object.entries(place.placeViews[lighting]).filter(([key,url])=>key!=='main'&&url).map(([,url])=>url).slice(0,2);
- const job=extraJobs[place.id]={projectId:project.id,placeId:place.id,name:place.name,styleId:project.style??null,total:EXTRA_COUNT,done:0,failed:0,cancelled:false,finished:false};
- const queue=extraAngles();let turn=0;
- showExtraProgress();
- const entity={...place,panorama:null,references:[],img:'',placeViews:{[lighting]:{main,...Object.fromEntries(others.map((url,i)=>['extra'+i,url]))}}};
- const worker=async()=>{
-  while(queue.length&&!job.cancelled){
-   const angle=queue.shift();let saved=false;
-   for(let attempt=0;attempt<3&&!saved&&!job.cancelled;attempt++){
-    try{
-     const image=await generateImage(keys[turn++%keys.length],model,extraPrompt(place,angle),null,entity,{w:4,h:3},true,null,new Image(),job.styleId);
-     const owner=extraOwner(job);if(!owner)throw Error('Décor supprimé.');
-     const known=[...Object.values(owner.placeViews?.[lighting]||{}),...(owner.extraViews||[]).map(v=>v.url)];
-     if(known.includes(image))throw Error('Image identique à une vue existante.');
-     if(job.cancelled)break;
-     owner.extraViews=[...(owner.extraViews||[]),{id:crypto.randomUUID(),url:image,angle,lighting}];
-     saved=true;job.done++;persist();
-    }catch(e){job.lastError=e.message;await new Promise(r=>setTimeout(r,500*(attempt+1)))}
-   }
-   if(!saved&&!job.cancelled){job.failed++}
-   showExtraProgress();
+ const summary=extraJobs[place.id]={projectId:project.id,placeId:place.id,name:place.name,styleId:project.style??null,total:EXTRA_COUNT,done:0,failed:0,cancelled:false,finished:false};
+ const entity={...place,panorama:null,references:[],img:'',extraViews:null,placeViews:{[lighting]:{main}}};
+ const group={id:crypto.randomUUID(),label:'« '+place.name+' »',cancelLabel:'Annuler les vues de '+place.name,onCancel:()=>{summary.cancelled=true}};
+ const jobs=[];
+ const settle=()=>{
+  summary.done=jobs.filter(j=>j.status==='done').length;summary.failed=jobs.filter(j=>j.status==='failed').length;
+  if(jobs.every(jobSettled)&&!summary.finished){
+   summary.finished=true;if(document.getElementById('places').classList.contains('active'))renderLibrary('places');
+   notify(summary.cancelled?'Vues de « '+summary.name+' » annulées : '+summary.done+' gardée(s)':'Vues de « '+summary.name+' » : '+summary.done+'/'+summary.total+(summary.failed?' ('+summary.failed+' échec'+(summary.failed>1?'s':'')+')':''));
   }
  };
- try{await Promise.all(Array.from({length:Math.min(keys.length,EXTRA_COUNT)},worker))}
- finally{job.finished=true;showExtraProgress();if(document.getElementById('places').classList.contains('active'))renderLibrary('places');
-  notify(job.cancelled?'Vues de « '+job.name+' » annulées : '+job.done+' gardée(s)':'Vues de « '+job.name+' » : '+job.done+'/'+job.total+(job.failed?' ('+job.failed+' échec'+(job.failed>1?'s':'')+')':''))}
+ for(const angle of extraAngles()){
+  jobs.push(enqueue({label:'Vue de « '+place.name+' »',group,
+   run:async key=>{
+    const image=await generateImage(key,model,extraPrompt(place,angle),null,entity,{w:4,h:3},true,null,new Image(),summary.styleId);
+    const owner=extraOwner(summary);if(!owner)throw Error('Décor supprimé.');
+    const known=[...Object.values(owner.placeViews?.[lighting]||{}),...(owner.extraViews||[]).map(v=>v.url)];
+    if(known.includes(image))throw Error('Image identique à une vue existante.');
+    return image;
+   },
+   onSuccess:image=>{const owner=extraOwner(summary);if(owner){owner.extraViews=[...(owner.extraViews||[]),{id:crypto.randomUUID(),url:image,angle,lighting}];persist()}settle()},
+   onFail:settle,onCancel:settle,onRetry:()=>{summary.finished=false}
+  }));
+ }
+ renderQueue();
 }
 // Génération des quatre vues : la vue de base d'abord, puis les trois autres en même temps, réparties sur les clés Agnes.
 const agnesKeys=()=>window.inkforgeAgnesKeys?.()||[];
@@ -726,9 +846,10 @@ function batchDraftView(batch,angle,image){
 }
 function renderBatch(){
  const batch=currentBatch;if(!batch)return;
+ batchBusy=Boolean(batch.saving)||Object.values(batch.cards).some(card=>card.job&&!jobSettled(card.job));
  const labels=batch.place?placeAngles:angles,firstLabel=labels[batch.first].label;
  $('viewBatchTitle').textContent='Les quatre vues · '+batch.name;
- $('viewBatchStep').textContent=!batch.revealed?'Création des quatre vues avec '+(batch.keys.length||1)+(batch.keys.length>1?' clés':' clé')+'… Elles s’afficheront toutes ensemble.':
+ $('viewBatchStep').textContent=!batch.revealed?'Création des quatre vues en arrière-plan… Elles s’afficheront toutes ensemble. Tu peux fermer cette fenêtre et continuer à travailler : elle se rouvre depuis la file en bas à droite.':
   batch.cards[batch.first].validated?'Vérifie chaque vue. Refais celles qui ne conviennent pas, puis valide-les une par une.':'Vérifie chaque vue. Valide d’abord la vue « '+firstLabel+' » : les autres en dépendent.';
  const grid=$('viewBatchGrid');grid.replaceChildren();
  for(const card of Object.values(batch.cards)){
@@ -736,6 +857,7 @@ function renderBatch(){
   const title=document.createElement('strong');title.textContent=labels[card.angle].label;box.append(title);
   const info=document.createElement('p');info.className='small';info.style.margin='0';
   if(card.status==='running')info.textContent='Création en cours…';
+  else if(card.status==='waiting'&&batch.revealed)info.textContent='En attente dans la file…';
   else if(!batch.revealed)info.textContent=card.status==='done'?'Prête':'En attente de la vue « '+firstLabel+' »…';
   else if(card.error)info.textContent=card.error;
   else{
@@ -746,74 +868,79 @@ function renderBatch(){
   if(batch.revealed){
    const actions=document.createElement('div');actions.className='toolbar';
    const redo=document.createElement('button');redo.className='btn';redo.type='button';redo.textContent='Refaire · '+labels[card.angle].label;
-   redo.disabled=batchBusy;redo.onclick=()=>redoBatchView(card.angle);
+   redo.disabled=Boolean(card.job&&!jobSettled(card.job));redo.onclick=()=>redoBatchView(card.angle);
    const ok=document.createElement('button');ok.className='btn primary';ok.type='button';ok.textContent='Valider · '+labels[card.angle].label;
-   ok.disabled=batchBusy||!card.image||card.validated||card.status==='running'||(card.angle!==batch.first&&!batch.cards[batch.first].validated);
+   ok.disabled=Boolean(batch.saving)||!card.image||card.validated||Boolean(card.job&&!jobSettled(card.job))||(card.angle!==batch.first&&!batch.cards[batch.first].validated);
    ok.onclick=()=>validateBatchView(card.angle);
    actions.append(redo,ok);box.append(actions);
   }
   grid.append(box);
  }
- $('viewBatchClose').disabled=batchBusy;
+ $('viewBatchClose').disabled=false;
 }
-async function runBatchView(batch,angle){
- const card=batch.cards[angle];
- const key=batch.keys.length?batch.keys[batch.turn++%batch.keys.length]:'';
- const attempt={projectId:batch.projectId,itemId:batch.characterId,angle,mode:batch.place?batch.lighting:'',status:'En cours'};
+function batchJob(batch,angle,after=null){
+ const card=batch.cards[angle],labels=batch.place?placeAngles:angles;
+ const attempt={projectId:batch.projectId,itemId:batch.characterId,angle,mode:batch.place?batch.lighting:'',status:'En attente'};
  viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
- Object.assign(card,{status:'running',error:'',validated:false,attempt});renderBatch();
- try{
-  const {image}=await buildView(batch.draft,angle,batch.place,key,attempt,new Image());
-  card.image=image;attempt.preview=mediaFingerprint(image);attempt.status='Aperçu';batchDraftView(batch,angle,image);
- }catch(e){card.image='';card.error=e.message;attempt.status=e.message}
- card.status='done';renderBatch();
+ Object.assign(card,{status:'waiting',error:'',validated:false,image:'',attempt});
+ const job=enqueue({label:labels[angle].label,group:batch.group,local:batch.local,after:after?[after]:null,needsReview:true,
+  afterError:'La vue « '+labels[batch.first].label+' » a échoué. Refais-la d’abord.',
+  run:async key=>{card.status='running';attempt.status='En cours';renderBatch();const {image}=await buildView(batch.draft,angle,batch.place,key,attempt,new Image());return image},
+  onSuccess:image=>{card.image=image;card.status='done';attempt.preview=mediaFingerprint(image);attempt.status='Aperçu';batchDraftView(batch,angle,image);batchSettled(batch)},
+  onFail:job=>{card.image='';card.error=job.error;card.status='done';attempt.status=job.error;batchSettled(batch)},
+  onCancel:()=>{card.status='done';card.error='Annulée.';batchSettled(batch)},
+  onRetry:()=>{card.status='waiting';card.error='';renderBatch()}
+ });
+ card.job=job;return job;
 }
-async function generateAllViews(character,place){
- if(aiBusy||batchBusy)return;
- const first=place?'main':'front';
- const blocked=viewBlocker(character,first,place);if(blocked)return showAi(...blocked);
- const local=place&&character.panorama,keys=agnesKeys();
- if(!keys.length&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
- const batch={projectId:project.id,characterId:character.id,name:character.name,place,lighting:character.lighting||'day',first,keys:local?[]:keys,turn:0,draft:clone(character),cards:{},revealed:false};
- for(const angle of Object.keys(place?placeAngles:angles))batch.cards[angle]={angle,status:'waiting',image:'',error:'',validated:false};
- currentBatch=batch;batchBusy=aiBusy=true;viewBatch.style.display='flex';renderBatch();
- try{
-  await runBatchView(batch,first);
-  const others=Object.keys(batch.cards).filter(angle=>angle!==first);
-  if(batch.cards[first].image)await Promise.all(others.map(angle=>runBatchView(batch,angle)));
-  else for(const angle of others)Object.assign(batch.cards[angle],{status:'done',error:'La vue « '+(place?placeAngles:angles)[first].label+' » a échoué. Refais-la d’abord.'});
+function batchSettled(batch){
+ const pending=Object.values(batch.cards).some(card=>card.job&&!jobSettled(card.job));
+ if(!pending&&!batch.revealed){
+  batch.revealed=true;
   const seen=new Set();
   for(const card of Object.values(batch.cards)){
    if(!card.image)continue;
    if(seen.has(card.image)){card.error='Agnes a renvoyé la copie exacte d’une autre vue. Refais cette vue.';card.image=''}
    else seen.add(card.image);
   }
- }finally{batch.revealed=true;batchBusy=aiBusy=false;renderBatch()}
+ }
+ renderBatch();
 }
-async function redoBatchView(angle){
- const batch=currentBatch;if(!batch||batchBusy)return;
- batchBusy=aiBusy=true;
- try{
-  if(angle!==batch.first&&!batch.cards[batch.first].image){batch.cards[angle].error='Refais d’abord la vue « '+(batch.place?placeAngles:angles)[batch.first].label+' ».';return}
-  await runBatchView(batch,angle);
- }finally{batchBusy=aiBusy=false;renderBatch()}
+async function generateAllViews(character,place){
+ const first=place?'main':'front';
+ const blocked=viewBlocker(character,first,place);if(blocked)return showAi(...blocked);
+ const local=Boolean(place&&character.panorama),keys=agnesKeys();
+ if(!keys.length&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
+ const batch={projectId:project.id,characterId:character.id,name:character.name,place,lighting:character.lighting||'day',first,local,draft:clone(character),cards:{},revealed:false};
+ batch.group={id:crypto.randomUUID(),label:'4 vues de « '+character.name+' »',view:()=>{currentBatch=batch;viewBatch.style.display='flex';renderBatch()}};
+ for(const angle of Object.keys(place?placeAngles:angles))batch.cards[angle]={angle,status:'waiting',image:'',error:'',validated:false};
+ currentBatch=batch;viewBatch.style.display='flex';
+ const base=batchJob(batch,first);
+ for(const angle of Object.keys(batch.cards))if(angle!==first)batchJob(batch,angle,base);
+ renderBatch();
+}
+function redoBatchView(angle){
+ const batch=currentBatch;if(!batch)return;
+ const card=batch.cards[angle];if(card.job&&!jobSettled(card.job))return;
+ if(angle!==batch.first&&!batch.cards[batch.first].image){card.error='Refais d’abord la vue « '+(batch.place?placeAngles:angles)[batch.first].label+' ».';return renderBatch()}
+ batchJob(batch,angle);renderBatch();
 }
 async function validateBatchView(angle){
- const batch=currentBatch,card=batch?.cards[angle];if(!card?.image||batchBusy)return;
+ const batch=currentBatch,card=batch?.cards[angle];if(!card?.image||batch.saving)return;
  const character=project[batch.place?'places':'characters'].find(item=>item.id===batch.characterId);
  if(batch.projectId!==project.id||!character){card.error='Fiche introuvable. Rouvre-la depuis le projet.';return renderBatch()}
  const previous=clone(project);
  if(batch.place)character.placeViews={...character.placeViews,[batch.lighting]:{...character.placeViews?.[batch.lighting],[angle]:card.image}};
  else{character.views={...character.views,[angle]:card.image};if(angle==='front')character.portrait=card.image}
  if(angle===batch.first){delete character.model3d;delete character.styleOutdated}
- batchBusy=true;renderBatch();
- try{await persist(true)}catch(e){workspace.projects[previous.id]=project=previous;card.error='Vue non enregistrée : '+e.message;batchBusy=false;return renderBatch()}
- batchBusy=false;
- card.validated=true;card.attempt.status='Validée';card.attempt.stored=mediaFingerprint(card.image);
+ batch.saving=true;renderBatch();
+ try{await persist(true)}catch(e){workspace.projects[previous.id]=project=previous;card.error='Vue non enregistrée : '+e.message;batch.saving=false;return renderBatch()}
+ batch.saving=false;
+ card.validated=true;card.attempt.status='Validée';card.attempt.stored=mediaFingerprint(card.image);if(card.job)card.job.reviewed=true;
  history.push(previous);if(history.length>60)history.shift();future=[];
- renderAll();renderBatch();notify('Vue enregistrée dans la fiche');
+ renderAll();renderBatch();renderQueue();notify('Vue enregistrée dans la fiche');
 }
-$('viewBatchClose').onclick=()=>{if(batchBusy)return;viewBatch.style.display='none';currentBatch=null;renderAll()};
+$('viewBatchClose').onclick=()=>{viewBatch.style.display='none';renderAll()};
 
 aiAccept.onclick=async()=>{
  if(!aiPending)return;
@@ -835,7 +962,7 @@ aiAccept.onclick=async()=>{
     workspace.projects[previous.id]=project=previous;aiPending=saved;
     showAi('Référence non enregistrée',e.message,saved.image);aiAccept.textContent='Réessayer l’enregistrement';return;
    }
-   saved.attempt.status='Validée';
+   saved.attempt.status='Validée';if(saved.job){saved.job.reviewed=true;saved.job.status='done';renderQueue()}
    saved.attempt.stored=mediaFingerprint(saved.angle==='panorama'?character.panorama:saved.place?character.placeViews[saved.lighting][saved.angle]:character.views[saved.angle]);
    history.push(previous);if(history.length>60)history.shift();future=[];
    aiPending=null;aiDialog.style.display='none';renderAll();notify('Référence enregistrée dans la fiche');
@@ -948,27 +1075,30 @@ function showPlaceChoice(){
 }
 $('aiPlace').addEventListener('change',()=>{const place=project.places.find(x=>x.id===$('aiPlace').value);aiPlaceChoice={placeId:'',angle:''};showPlaceChoice();if(place)askPlaceView(place)});
 $('generate').onclick=async()=>{
- if(aiBusy)return;
- const key=agnesKey(),promptText=$('aiPrompt').value.trim(),model=$('agnesModel').value;
- if(!key)return showAi('Clé API manquante','Ouvre le tiroir « Clé API » en bas et ajoute ta clé Agnes AI.');
+ const promptText=$('aiPrompt').value.trim(),model=$('agnesModel').value;
+ if(!agnesKeys().length)return showAi('Clé API manquante','Ouvre le tiroir « Clé API » en bas et ajoute ta clé Agnes AI.');
  if(!promptText)return showAi('Description manquante','Décris la scène à générer.');
  if(!model)return showAi('Modèle manquant','Clique sur « Actualiser les modèles » et choisis un modèle d’image.');
- const frame=current();if(!frame)return showAi('Aucune case sélectionnée','Ajoute puis sélectionne une case dans l’éditeur de planches.');
+ const frame=current(),shape=frame?{w:frame.w,h:frame.h}:{w:3,h:4};
  const character=project.characters.find(x=>x.id===$('aiCharacter').value)||null;
  let place=project.places.find(x=>x.id===$('aiPlace').value)||null;
  if(place){
   const angle=await placeViewFor(place);if(angle===null)return;
   place=placeForPanel(place,angle);
  }
- const target={projectId:project.id,page,index:selected,frameId:frame.id};
- aiBusy=true;aiClose.disabled=true;$('generate').disabled=true;aiPending=null;
- showAi('Génération IA en cours','Étape 1/3 : préparation du personnage, du décor et de la case…');
- try{
-  aiDialogStep.textContent='Étape 2/3 : envoi à Agnes AI et attente du résultat…\nSelon le modèle, cette opération peut prendre un moment.';
-  const image=await generateImage(key,model,promptText+integrationRules(character,place),character,place,{w:frame.w,h:frame.h});
-  aiPending={...target,image};
-  showAi('Aperçu de la génération','Étape 3/3 : image générée. Vérifie le résultat avant de l’insérer dans la case.',image);
- }catch(e){showAi('Échec de génération',e.message+'\nLa case est conservée.')}finally{aiBusy=false;aiClose.disabled=false;$('generate').disabled=false}
+ const projectId=project.id,styleId=project.style??null,fullPrompt=promptText+integrationRules(character,place);
+ // La case générée part dans l’onglet « Images » : elle n’est jamais placée automatiquement.
+ enqueue({label:'Case : '+(promptText.length>38?promptText.slice(0,38)+'…':promptText),
+  run:key=>generateImage(key,model,fullPrompt,character,place,shape,false,null,new Image(),styleId),
+  onSuccess:image=>{
+   const owner=project.id===projectId?project:workspace.projects[projectId];if(!owner)return;
+   owner.images=[...(owner.images||[]),{id:crypto.randomUUID(),url:image,prompt:promptText,createdAt:Date.now()}];
+   persist();if(document.getElementById('images').classList.contains('active'))renderImages();
+   notify('Image ajoutée à l’onglet « Images »');
+  },
+  view:()=>{document.querySelector('[data-tab="images"]').click()}
+ });
+ $('aiStatus').textContent='Génération ajoutée à la file. L’image arrivera dans l’onglet « Images ».';
 };
 window.addEventListener('inkforge-api-key-added',()=>{if(document.getElementById('ai').classList.contains('active'))loadAiModels(false)});
 $('modelFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;if(modelURL)URL.revokeObjectURL(modelURL);modelURL=URL.createObjectURL(file);const area=$('modelArea');area.innerHTML='<span class="muted">Chargement du visualiseur 3D…</span>';if(!customElements.get('model-viewer')){try{await import('https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js')}catch(err){area.textContent='Visualiseur 3D indisponible : une connexion Internet est nécessaire.';return}}area.innerHTML='';const viewer=document.createElement('model-viewer');viewer.src=modelURL;viewer.setAttribute('camera-controls','');viewer.setAttribute('auto-rotate','');viewer.setAttribute('shadow-intensity','1');viewer.setAttribute('environment-image','neutral');viewer.alt='Modèle 3D importé';area.append(viewer)};
@@ -1052,7 +1182,7 @@ imageInput:'Importer une image dans la case.',apply:'Appliquer la description et
 x:'Position horizontale de la case, en pourcentage.',y:'Position verticale de la case, en pourcentage.',
 w:'Largeur de la case, en pourcentage.',h:'Hauteur de la case, en pourcentage.',applyGeometry:'Appliquer les positions et dimensions saisies.'
 };
-const tabs={editor:'Ouvrir l’éditeur de planches.',characters:'Gérer les fiches de personnages.',places:'Gérer les décors.',studio3d:'Importer et visualiser des modèles 3D.',projects:'Gérer, sauvegarder et importer les projets.',ai:'Configurer une génération d’image par serveur IA.',style:'Choisir le style graphique de tout le projet : personnages, décors et cases.'};
+const tabs={editor:'Ouvrir l’éditeur de planches.',characters:'Gérer les fiches de personnages.',places:'Gérer les décors.',studio3d:'Importer et visualiser des modèles 3D.',projects:'Gérer, sauvegarder et importer les projets.',ai:'Configurer une génération d’image par serveur IA.',style:'Choisir le style graphique de tout le projet : personnages, décors et cases.',images:'Les images générées pour les cases, à placer dans une case.'};
 const help=document.getElementById('inkHelpPanel'),button=document.getElementById('inkHelpButton'),close=document.getElementById('inkHelpClose'),tip=document.getElementById('inkTooltip'),setting=document.getElementById('inkTooltipsEnabled');
 let enabled=true,timer=null,target=null;
 setting.addEventListener('ink-settings-loaded',()=>{enabled=setting.checked});
@@ -1253,8 +1383,8 @@ if(place){
   for(const v of list){const img=new Image();img.src=v.url;img.alt=v.angle;img.title=v.angle;img.loading='lazy';img.style.cssText='width:100%;border-radius:4px';strip.append(img)}
   d.append(extra,info,strip);
  }else d.append(extra);
- queueMicrotask(showExtraProgress);
-}if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info);if(c.styleOutdated){const old=document.createElement('p');old.className='help';old.dataset.styleOutdated='';old.textContent='⚠ Dessiné dans l’ancien style : utilise « Générer les 4 vues » pour le refaire dans le style « '+(artStyles[project.style]?.name||'actuel')+' ».';d.append(old)}d.append(bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.10</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
+ queueMicrotask(renderQueue);
+}if(!place&&(c.portrait||c.references?.[0]||c.img)){const build=document.createElement('button');build.className='btn';build.textContent=c.model3d?'Actualiser le modèle 3D':'Générer le modèle 3D';build.onclick=()=>characterModel(c,true);bar.append(build)}if(!place&&c.model3d){const openModel=document.createElement('button');openModel.className='btn';openModel.textContent='Ouvrir le modèle 3D';openModel.onclick=()=>characterModel(c,false);bar.append(openModel)}bar.append(del);d.append(h,info);if(c.styleOutdated){const old=document.createElement('p');old.className='help';old.dataset.styleOutdated='';old.textContent='⚠ Dessiné dans l’ancien style : utilise « Générer les 4 vues » pour le refaire dans le style « '+(artStyles[project.style]?.name||'actuel')+' ».';d.append(old)}d.append(bar);grid.append(d)})};renderLibrary('characters');})();</script><div class="api-bottom" id="apiBottom"><button class="api-toggle" id="apiToggle" type="button" aria-controls="apiDrawer" aria-expanded="false"><span>🔑 Clé API <span id="apiCount" class="small">(0 en mémoire)</span></span><span class="api-arrow">⌃</span></button><div class="api-drawer" id="apiDrawer"><div class="api-drawer-inner"><h3>Connexions IA — clés API</h3><p class="api-note">Ajoutez plusieurs clés pour préparer votre configuration. Elles restent uniquement dans la mémoire de cet onglet et disparaissent lorsque vous le rechargez ou le fermez. Elles ne sont pas ajoutées aux projets, exports JSON ou sauvegardes locales. La vérification utilise un relais local et l’API officielle Agnes AI. Aucune génération payante n’est lancée pour ce test.</p><div class="api-form"><label>Fournisseur<input id="apiProvider" value="Agnes AI" placeholder="Nom du fournisseur" autocomplete="off"></label><label>Clé secrète<input id="apiSecret" type="password" placeholder="Coller la clé API" autocomplete="off" spellcheck="false"></label><button class="btn primary" id="addApiKey" type="button">+ Ajouter</button></div><div id="apiKeyList" aria-live="polite"></div><div class="toolbar"><button class="btn primary" id="validateApiKeys" type="button">Valider les connexions</button><button class="btn" id="clearApiKeys" type="button">Effacer toutes les clés</button></div><p class="api-note">Démarrez INKFORGE avec LANCER_INKFORGE.cmd. Les clés ne sont pas enregistrées dans le projet. Un test réussi confirme l’accès à l’API des modèles, pas nécessairement l’accès à tous les modèles d’images.</p></div></div></div><style>#inkUpdate{position:fixed;top:12px;right:16px;z-index:10010;background:#1d2636;color:#eef3ff;border:1px solid #7586b0;border-radius:12px;padding:10px 14px;box-shadow:0 10px 32px #0007;font:14px Arial,sans-serif}#inkUpdate button{cursor:pointer;background:#6258dc;border:0;border-radius:7px;color:white;padding:7px 10px}#inkUpdateDialog{position:fixed;inset:0;z-index:30000;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}#inkUpdateDialog .inkPanel{max-width:540px;width:100%;background:#172031;border:1px solid #8e87f6;color:#f3f5ff;padding:24px;border-radius:16px;font:15px Arial,sans-serif}#inkUpdateDialog button{background:#655ae0;border:0;border-radius:7px;padding:10px 14px;color:#fff;cursor:pointer;margin:5px}#inkUpdateDialog input{display:block;margin:15px 0;color:#fff}#inkUpdateDialog p{line-height:1.5}</style><div id="inkUpdate"><span id="inkUpdateLabel">INKFORGE Studio v2.7.11</span> <button id="inkUpdateOpen" type="button">Mises à jour</button></div><div id="inkUpdateDialog"><div class="inkPanel" role="dialog" aria-modal="true"><h2 id="inkUpdateTitle">Mises à jour INKFORGE</h2><p id="inkUpdateDescription">Recherche des mises à jour…</p><p>Chaque mise à jour sauvegarde d’abord la version actuelle et ses projets sur ce PC. La nouvelle version commence avec un studio vierge. Les clés API restent en mémoire pendant la session.</p><input id="inkUpdateFile" type="file" accept=".zip,application/zip"><button id="inkUpdateAuto" type="button" style="display:none">Installer la mise à jour</button><button id="inkUpdateInstall" type="button">Installer le ZIP sélectionné</button><button id="inkRestore" type="button" hidden>Restaurer la version précédente</button><button id="inkUpdateClose" type="button">Fermer</button><p id="inkUpdateStatus" aria-live="polite"></p><details><summary>Configurer le dépôt de mises à jour (une seule fois)</summary><p>Indiquez le dépôt GitHub public utilisé pour publier INKFORGE, au format propriétaire/depot.</p><input id="inkUpdateRepo" placeholder="proprietaire/inkforge-releases" style="width:95%;padding:9px;background:#111a28;border:1px solid #596985;border-radius:6px"><button id="inkUpdateRepoSave" type="button">Enregistrer le dépôt</button></details></div></div><script>(()=>{
  'use strict';
  const $=id=>document.getElementById(id),modal=$('inkUpdateDialog'),status=$('inkUpdateStatus');
  const auto=$('inkUpdateAuto'),manual=$('inkUpdateInstall'),restore=$('inkRestore');
