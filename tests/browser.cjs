@@ -42,7 +42,8 @@ async function validateReference(p,trigger,subject,angle,providerCalls=1){
  try{
   await openResult(p,job);
   assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
-  assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
+  // L’aperçu s’ouvre depuis la file : on laisse l’image finir de se charger.
+  await p.waitForFunction(()=>{const img=document.getElementById('aiDialogImage');return img.complete&&img.naturalWidth>0},null,{timeout:15000});
   assert.equal(countCalls(),before+providerCalls,'Nombre exact de générations Agnes');
   assert.equal(await dialog.locator('img:visible').count(),1);
   const preview=await dialog.locator('#aiDialogImage').getAttribute('src');
