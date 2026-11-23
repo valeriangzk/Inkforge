@@ -40,6 +40,7 @@ jobs:
       - run: node tests/browser.cjs
       - run: node tests/batch_views.cjs
       - run: node tests/style_tab.cjs
+      - run: node tests/scene_tools.cjs
       - run: node tests/migration.cjs
       - run: python tools/prepare_release.py dist
       - uses: actions/upload-artifact@v4

@@ -289,6 +289,9 @@ async function generate(p,prompt,accept=true){
   assert.equal(await p.locator('#studioSources img').first().getAttribute('src'),placeViews.night.main);
   await p.locator('[data-tab=ai]').click();
   await p.locator('#aiPlace').selectOption({label:'Lieu de vérification'});
+  // Décor à plusieurs vues : INKFORGE demande laquelle sert de fond à la case.
+  await p.locator('#placeViewDialog').waitFor({state:'visible'});
+  await p.getByRole('button',{name:'Choisir la vue · Vue principale',exact:true}).click();
   await generate(p,'Paysage de nuit');
   const sceneCall=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
   assert.ok(sceneCall.prompt.includes('Éclairage: Nuit')&&sceneCall.refs>0);
