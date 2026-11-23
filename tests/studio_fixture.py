@@ -8,6 +8,7 @@ import struct
 import sys
 import threading
 import time
+METRICS_LOCK=threading.Lock()
 import zlib
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -78,7 +79,8 @@ class Provider(BaseHTTPRequestHandler):
             assert image.startswith('data:image/jpeg;base64,')
             assert base64.b64decode(image.split(',',1)[1],validate=True).startswith(b'\xff\xd8\xff')
         prompt=req['prompt']
-        with (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
+        # Les générations simultanées écrivent une ligne chacune : sous Windows, deux ajouts concurrents peuvent s'écraser.
+        with METRICS_LOCK, (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
             print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req)),'key':key,'start':started,'end':time.time()}),file=output)
         if prompt.startswith('quota-fournisseur'):
             return self.reply({},429)
@@ -110,7 +112,7 @@ class Provider(BaseHTTPRequestHandler):
             if duplicate.exists():
                 raw=duplicate.read_bytes()
                 duplicate.unlink()
-            with (folder/'views.jsonl').open('a',encoding='utf-8') as log:
+            with METRICS_LOCK, (folder/'views.jsonl').open('a',encoding='utf-8') as log:
                 print(json.dumps({'prompt':prompt,'refs':len(images),'sha':hashlib.sha256(raw).hexdigest()}),file=log)
         records=[{'b64_json':base64.b64encode(raw).decode()}]
         if prompt.startswith('Vue opposée'):
