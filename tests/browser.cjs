@@ -184,7 +184,8 @@ async function placeStored(p,index){
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   fs.copyFileSync(path.join(media,path.basename(views.front)),path.join(folder,'repeat-view.png'));
   const copy=await settle(p,p.getByRole('button',{name:'Régénérer · Dos'}));
-  assert.equal(copy.status,'failed');assert.ok(copy.error.includes('copie exacte'),copy.error);
+  // La copie est refusée, puis le nouvel essai automatique produit une vraie vue (non validée).
+  assert.equal(copy.status,'ready');assert.ok(copy.error.includes('copie exacte'),copy.error);
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioCharacter').selectOption({label:'Sujet de vérification'});
@@ -259,7 +260,7 @@ async function placeStored(p,index){
   for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
    const echo=await settle(p,p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}));
-   assert.equal(echo.status,'failed');
+   assert.equal(echo.status,'ready','Nouvel essai automatique après la copie refusée');
    assert.match(echo.error,/copie exacte|reproduit une référence|même image/);
    assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),beforeEcho);
   }
