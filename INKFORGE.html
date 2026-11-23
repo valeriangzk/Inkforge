@@ -524,8 +524,13 @@ async function buildView(character,angle,place,key,attempt,img,options={}){
 }
 async function generateCharacterPortrait(character,angle='front',place=false,options={}) {
  const blocked=viewBlocker(character,angle,place);if(blocked)return showAi(...blocked);
- const local=place&&angle!=='panorama'&&character.panorama&&!options.forceAI;
  if(aiBusy)return;
+ const current=place?character.placeViews?.[character.lighting||'day']?.[angle]:character.views?.[angle];
+ if(place&&angle!=='panorama'&&character.panorama&&options.forceAI){
+  // Panorama remplacé depuis la dernière vue : on réextrait d’abord cette direction, sans Agnes.
+  try{if(await panoramaView(character.panorama,angle,character.lighting||'day')!==current)options={...options,forceAI:false}}catch{}
+ }
+ const local=place&&angle!=='panorama'&&character.panorama&&!options.forceAI;
  const key=agnesKey();
  if(!key&&!local)return showAi('Clé API nécessaire','Ajoute ta clé Agnes AI dans le tiroir Clé API.');
  const projectId=project.id;
@@ -534,7 +539,6 @@ async function generateCharacterPortrait(character,angle='front',place=false,opt
  aiPending=null;aiBusy=true;aiClose.disabled=true;
  showAi('Création de la référence','Préparation de la vue depuis la fiche…');
  try{
-   const current=place?character.placeViews?.[character.lighting||'day']?.[angle]:character.views?.[angle];
    let built;
    // Une régénération doit toujours proposer une image différente de la vue actuelle.
    for(let round=0;round<3;round++){
