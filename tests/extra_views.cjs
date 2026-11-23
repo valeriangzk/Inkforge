@@ -22,13 +22,15 @@ const calls=()=>fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim()
 
 
 const lastCall=()=>calls().at(-1);
+const { settle, preview: queuePreview } = require('./queue_helpers.cjs');
 async function preview(p,button){
- await button.click();
- await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
- await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+ const job=await queuePreview(p,button);
  const title=await p.locator('#aiDialogTitle').textContent();
- assert.ok(/^(Référence de |Aperçu)/.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ assert.ok(/^Référence de /.test(title),title+' — '+await p.locator('#aiDialogStep').textContent());
+ return job;
 }
+// Génération d’une case : l’image part dans l’onglet « Images ».
+async function generatePanel(p){const job=await settle(p,p.locator('#generate'));assert.equal(job.status,'done',job.error);await p.evaluate(()=>flushWorkspace());return job}
 async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await p.evaluate(()=>flushWorkspace())}
 (async()=>{
  try{
@@ -68,12 +70,12 @@ async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitF
   await p.getByRole('button',{name:'Générer 20 vues · chambre de Rinko',exact:true}).click();
   await p.waitForFunction(()=>Object.values(extraJobs).some(j=>j.done>=1),null,{timeout:30000});
   // Le logiciel reste utilisable pendant la génération.
-  assert.equal(await p.evaluate(()=>aiBusy),false);
+  assert.ok(await p.locator('#queuePanel').isVisible(),'Le panneau de la file est visible');
   await p.locator('[data-tab=editor]').click();
   const pages=await p.evaluate(()=>project.pages.length);
   await p.locator('#addPage').click();
   assert.equal(await p.evaluate(()=>project.pages.length),pages+1,'Une planche se crée pendant la génération');
-  assert.match(await p.locator('#extraViewsBadge').textContent(),/chambre de Rinko » : \d+\/20/);
+  assert.match(await p.locator('#queuePanel').textContent(),/chambre de Rinko » : \d+\/20/);
   await p.waitForFunction(()=>Object.values(extraJobs).every(j=>j.finished),null,{timeout:120000});
   const place=await p.evaluate(()=>project.places[0]);
   assert.equal(place.extraViews.length,20,'Les 20 vues arrivent (avec un échec retenté)');
@@ -113,7 +115,7 @@ async function accept(p){await p.locator('#aiAcceptImage').click();await p.waitF
   const third=await p.evaluate(()=>project.places[0].extraViews[2]);
   await p.getByRole('button',{name:'Choisir la vue · Vue 3 : '+third.angle,exact:true}).click();
   await p.locator('#aiPrompt').fill('Rinko lit dans sa chambre');
-  await preview(p,p.locator('#generate'));
+  await generatePanel(p);
   assert.ok(lastCall().prompt.includes('Vue choisie pour la case : Vue 3 : '+third.angle));
   console.log('PASS vues conservées après réouverture et proposées pour une case');
  }catch(error){console.error(error);process.exitCode=1}

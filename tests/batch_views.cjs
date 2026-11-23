@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
+const { settle, openResult } = require('./queue_helpers.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'inkforge-batch-'));
@@ -107,9 +108,7 @@ async function runBatch(p,grid,labels){
    const before=calls().length;
    const field=p.locator(grid).getByLabel('Correction (facultatif) · '+label,{exact:true});
    await field.fill(correction);
-   await p.locator(grid).getByRole('button',{name:'Régénérer · '+label,exact:true}).click();
-   await p.waitForFunction(()=>aiBusy,null,{timeout:5000}).catch(()=>{});
-   await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+   await openResult(p,await settle(p,p.locator(grid).getByRole('button',{name:'Régénérer · '+label,exact:true})));
    const title=await p.locator('#aiDialogTitle').textContent();
    assert.ok(title.startsWith('Référence de '),'Aperçu attendu, obtenu : '+title+' — '+await p.locator('#aiDialogStep').textContent());
    const made=calls().slice(before);

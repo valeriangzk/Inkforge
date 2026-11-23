@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
+const { settle, openResult } = require('./queue_helpers.cjs');
 
 const repo = path.resolve(__dirname, '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'inkforge-test-'));
@@ -36,12 +37,10 @@ async function validateReference(p,trigger,subject,angle,providerCalls=1){
  const metrics=path.join(folder,'metrics.jsonl');
  const countCalls=()=>fs.existsSync(metrics)?fs.readFileSync(metrics,'utf8').trim().split('\n').length:0;
  const before=countCalls();
- await trigger.click();
+ const job=await settle(p,trigger);
  const dialog=p.locator('#aiProgressDialog');
- await dialog.waitFor({state:'visible'});
- // The dialog also opens on failure. Its close button is enabled when generation finishes.
  try{
-  await p.waitForFunction(()=>!document.getElementById('aiCloseDialog').disabled,null,{timeout:60000});
+  await openResult(p,job);
   assert.equal(await dialog.locator('#aiDialogTitle').textContent(),'Référence de '+subject+' · '+angle);
   assert.ok(await dialog.locator('#aiDialogImage').evaluate(img=>img.complete && img.naturalWidth>0));
   assert.equal(countCalls(),before+providerCalls,'Nombre exact de générations Agnes');
@@ -75,14 +74,17 @@ async function validateReference(p,trigger,subject,angle,providerCalls=1){
   throw new Error(angle+' — '+await dialog.locator('#aiDialogTitle').textContent()+' — '+await dialog.locator('#aiDialogStep').textContent(),{cause:error});
  }
 }
-async function generate(p,prompt,accept=true){
+async function generate(p,prompt){
  await p.locator('#aiPrompt').fill(prompt);
- await p.locator('#generate').click();
- await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
- if(accept){
-   assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth>0));
-   await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
- }
+ const job=await settle(p,p.locator('#generate'));await saved(p);return job;
+}
+// Place une image de l’onglet « Images » dans la case sélectionnée.
+async function placeStored(p,index){
+ await p.locator('[data-tab=images]').click();
+ await p.getByRole('button',{name:'Placer dans une case · image '+index,exact:true}).click();
+ await p.locator('#imageDialog').waitFor({state:'visible'});
+ await p.locator('#imageConfirm').click();await p.locator('#imageDialog').waitFor({state:'hidden'});await saved(p);
+ await p.locator('[data-tab=ai]').click();
 }
 (async()=>{
  try{
@@ -105,19 +107,18 @@ async function generate(p,prompt,accept=true){
   await p.locator('#memorySave').click();await saved(p);
   await p.locator('[data-tab=ai]').click();await p.locator('#listAgnesModels').click();
   await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
-  await generate(p,'Scène avec une description seule');
-  const original=await p.evaluate(()=>current().img);
+  assert.equal((await generate(p,'Scène avec une description seule')).status,'done');
+  assert.equal(await p.evaluate(()=>current().img||''),'','Une case générée n’est jamais placée automatiquement');
   await p.locator('#aiCharacter').selectOption({label:'Sujet de vérification'});
   await p.locator('#aiPlace').selectOption({label:'Lieu de vérification'});
-  await generate(p,'Scène avec personnage et décor',false);
-  await p.route('**/work/save',r=>r.fulfill({status:507,contentType:'application/json',body:JSON.stringify({error:'Disque plein pendant le test.'})}),{times:1});
-  await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>document.querySelector('#aiDialogTitle').textContent==='Image non enregistrée');
-  assert.equal(await p.evaluate(()=>current().img),original);
-  await p.getByRole('button',{name:'Réessayer l’enregistrement'}).click();await p.waitForFunction(()=>aiDialog.style.display==='none');await saved(p);
-  const scene=await p.evaluate(()=>current().img);assert.notEqual(original,scene);
+  assert.equal((await generate(p,'Scène avec personnage et décor')).status,'done');
+  const stored=await p.evaluate(()=>project.images.map(i=>i.url));assert.equal(stored.length,2);
+  await placeStored(p,1);assert.equal(await p.evaluate(()=>current().img),stored[0]);
+  await placeStored(p,2);
+  const scene=await p.evaluate(()=>current().img);assert.equal(scene,stored[1]);
   for(const prompt of ['image-incomplete','quota-fournisseur']){
-    await generate(p,prompt,false);assert.ok((await p.locator('#aiDialogStep').textContent()).includes('conservée'));
-    assert.equal(await p.evaluate(()=>current().img),scene);await p.locator('#aiCloseDialog').click();
+    const job=await generate(p,prompt);assert.equal(job.status,'failed');assert.ok(job.error);
+    assert.equal(await p.evaluate(()=>current().img),scene);assert.equal(await p.evaluate(()=>project.images.length),2);
   }
   await p.locator('[data-tab=editor]').click();await p.locator('#selectedLabel').selectOption('1');
   await p.locator('#imageInput').setInputFiles(path.join(folder,'reference4.png'));
@@ -140,7 +141,7 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>Object.keys(workspace.projects).length===2);await saved(p);
   assert.ok(!fs.readFileSync(path.join(folder,'_inkforge_travail','state.json'),'utf8').includes('data:image'));
   const calls=fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
-  assert.equal(calls.length,5);assert.equal(calls[0].refs,5);assert.equal(calls[1].refs,0);
+  assert.equal(calls[0].refs,5);assert.equal(calls[1].refs,0);
   assert.ok(calls[2].prompt.includes('Façade en briques')&&calls[2].prompt.includes('cheveux courts'));
   assert.ok(calls.every(c=>c.size<4_000_000));
   await key(p);await p.locator('[data-tab=characters]').click();
@@ -178,13 +179,11 @@ async function generate(p,prompt,accept=true){
   }
   const views=await p.evaluate(()=>({...project.characters[0].views}));
   assert.notEqual(views.front,face);assert.equal(await p.evaluate(()=>project.characters[0].portrait),views.front);
-  await p.getByRole('button',{name:'Régénérer · Profil gauche'}).click();
-  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});await p.locator('#aiCloseDialog').click();
+  assert.equal((await settle(p,p.getByRole('button',{name:'Régénérer · Profil gauche'}))).status,'ready');
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   fs.copyFileSync(path.join(media,path.basename(views.front)),path.join(folder,'repeat-view.png'));
-  await p.getByRole('button',{name:'Régénérer · Dos'}).click();await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
-  assert.ok((await p.locator('#aiDialogStep').textContent()).includes('copie exacte'));
-  assert.ok(await p.locator('#aiAcceptImage').isHidden());await p.locator('#aiCloseDialog').click();
+  const copy=await settle(p,p.getByRole('button',{name:'Régénérer · Dos'}));
+  assert.equal(copy.status,'failed');assert.ok(copy.error.includes('copie exacte'),copy.error);
   assert.deepEqual(await p.evaluate(()=>project.characters[0].views),views);
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioCharacter').selectOption({label:'Sujet de vérification'});
@@ -258,11 +257,9 @@ async function generate(p,prompt,accept=true){
   },beforeEcho.day.main);
   for(const response of [mainPicture,Buffer.from(reencoded,'base64'),'jpeg',Buffer.from(brighter,'base64')]){
    fs.writeFileSync(path.join(folder,'repeat-place'),response);
-   await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
-   await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
-   assert.ok(await p.locator('#aiAcceptImage').isHidden());
-   assert.match(await p.locator('#aiDialogStep').textContent(),/copie exacte|reproduit une référence|même image/);
-   await p.locator('#aiCloseDialog').click();
+   const echo=await settle(p,p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}));
+   assert.equal(echo.status,'failed');
+   assert.match(echo.error,/copie exacte|reproduit une référence|même image/);
    assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),beforeEcho);
   }
   const details=p.locator('#placeGrid details');
@@ -282,8 +279,7 @@ async function generate(p,prompt,accept=true){
   assert.ok(report.includes('demandes différentes, fichier identique reçu'));
   await p.locator('#placeGrid select').selectOption('night');
   const placeViews=await p.evaluate(()=>project.places[0].placeViews);
-  await p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}).click();
-  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});await p.locator('#aiCloseDialog').click();
+  assert.equal((await settle(p,p.locator('#placeGrid').getByRole('button',{name:'Régénérer · Vue gauche'}))).status,'ready');
   await p.locator('[data-tab=studio3d]').click();
   await p.locator('#studioPlace').selectOption({label:'Lieu de vérification'});
   assert.equal(await p.locator('#studioSources img').first().getAttribute('src'),placeViews.night.main);
@@ -292,7 +288,7 @@ async function generate(p,prompt,accept=true){
   // Décor à plusieurs vues : INKFORGE demande laquelle sert de fond à la case.
   await p.locator('#placeViewDialog').waitFor({state:'visible'});
   await p.getByRole('button',{name:'Choisir la vue · Vue principale',exact:true}).click();
-  await generate(p,'Paysage de nuit');
+  assert.equal((await generate(p,'Paysage de nuit')).status,'done');
   const sceneCall=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
   assert.ok(sceneCall.prompt.includes('Éclairage: Nuit')&&sceneCall.refs>0);
   await p.reload();await p.waitForFunction(()=>workspaceReady);
@@ -301,8 +297,7 @@ async function generate(p,prompt,accept=true){
   assert.equal(await p.evaluate(()=>project.places[0].references.length),2);
   await p.locator('[data-tab=places]').click();
   await key(p);
-  await p.getByRole('button',{name:'Créer le panorama avec Agnes'}).click();
-  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+  await openResult(p,await settle(p,p.getByRole('button',{name:'Créer le panorama avec Agnes'})));
   assert.ok((await p.locator('#aiDialogTitle').textContent()).includes('Panorama 360°'));
   await p.locator('#aiAcceptImage').click();await saved(p);
   assert.ok(await p.evaluate(()=>project.places[0].panorama.startsWith('/media/')));
