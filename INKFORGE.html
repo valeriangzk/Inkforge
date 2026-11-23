@@ -444,7 +444,7 @@ async function buildView(character,angle,place,key,attempt,img,options={}){
  const sphere=place&&angle==='panorama';
  // « Régénérer » passe toujours par Agnes : le panorama ne sert alors que de référence.
  const fromPanorama=place&&!sphere&&character.panorama&&options.forceAI;
- const local=place&&!sphere&&character.panorama&&!options.forceAI;
+ const local=!options.forceAI&&place&&!sphere&&character.panorama; // l’adresse du panorama, ou faux
    if(!local&&!$('agnesModel').value)await loadAiModels(false,true);
    const model=$('agnesModel').value;
    if(!local&&!model)throw Error('Aucun modèle image disponible avec cette clé.');
