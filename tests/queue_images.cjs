@@ -104,10 +104,12 @@ const { settle } = require('./queue_helpers.cjs');
   await p.waitForFunction(()=>generationQueue.every(j=>['done','cancelled'].includes(j.status)),null,{timeout:60000});
   await p.unroute('**/ai/generate');
   assert.ok(!(await p.evaluate(()=>project.images.map(i=>i.prompt))).includes('Attente trois'));
-  // Le panneau se réduit.
-  await p.locator('#queuePanel').getByRole('button',{name:'Réduire',exact:true}).click();
+  // Rien n’attend : le panneau se réduit tout seul ; on peut l’ouvrir puis le réduire.
   assert.ok(await p.locator('#queueList').isHidden());
   await p.locator('#queuePanel').getByRole('button',{name:'Afficher',exact:true}).click();
+  assert.ok(await p.locator('#queueList').isVisible());
+  await p.locator('#queuePanel').getByRole('button',{name:'Réduire',exact:true}).click();
+  assert.ok(await p.locator('#queueList').isHidden());
   console.log('PASS échec retenté puis « Réessayer », annulation, panneau réductible');
 
   // 5. Les 4 vues d’un personnage restent dans sa bibliothèque.

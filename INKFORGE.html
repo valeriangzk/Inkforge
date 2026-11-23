@@ -686,10 +686,10 @@ function askDeleteImage(item){
  imageAsk.style.display='flex';
 }
 // File de générations en arrière-plan : rien ne bloque l’écran, les tâches se répartissent sur les clés Agnes.
-const generationQueue=[];let queueTurn=0,queueCollapsed=false;
+const generationQueue=[];let queueTurn=0,queueCollapsed=null; // null : réduit automatiquement quand rien n’attend
 function enqueue(job){
  Object.assign(job,{id:crypto.randomUUID(),status:'waiting',tries:0,error:''});
- generationQueue.push(job);renderQueue();pumpQueue();return job;
+ generationQueue.push(job);queueCollapsed=null;renderQueue();pumpQueue();return job;
 }
 const jobSettled=job=>['done','ready','failed','cancelled'].includes(job.status);
 function pumpQueue(){
@@ -722,7 +722,8 @@ async function runJob(job){
 function cancelJob(job){if(job.status==='waiting'||job.status==='running'){job.status='cancelled';job.onCancel?.(job)}}
 function retryJob(job){if(job.status!=='failed')return;Object.assign(job,{status:'waiting',tries:0,error:''});job.onRetry?.(job)}
 const queuePanel=document.createElement('div');queuePanel.id='queuePanel';queuePanel.setAttribute('role','status');
-queuePanel.style.cssText='position:fixed;right:14px;bottom:64px;z-index:9000;width:min(360px,calc(100vw - 28px));max-height:46vh;display:none;flex-direction:column;background:#182131;border:1px solid #69728d;border-radius:12px;box-shadow:0 10px 30px #0008;font-size:13px';
+queuePanel.style.cssText='position:fixed;right:14px;bottom:64px;z-index:9000;max-width:min(360px,calc(100vw - 28px));max-height:46vh;display:none;flex-direction:column;background:#182131e8;border:1px solid #69728d;border-radius:12px;box-shadow:0 10px 30px #0008;font-size:13px;pointer-events:none';
+const queueStyle=document.createElement('style');queueStyle.textContent='#queuePanel button{pointer-events:auto}';document.head.append(queueStyle);
 document.body.append(queuePanel);
 function queueStatus(job){
  return {waiting:'en attente',running:'en cours…',ready:'prête à vérifier',done:job.reviewed?'validée':'terminée',failed:'échec : '+job.error,cancelled:'annulée'}[job.status];
@@ -733,14 +734,16 @@ function renderQueue(){
  if(!visible.length)return queuePanel.replaceChildren();
  const running=visible.filter(j=>j.status==='running').length,waiting=visible.filter(j=>j.status==='waiting').length;
  const finished=visible.filter(j=>['done','ready'].includes(j.status)).length;
+ const needsEye=visible.some(j=>j.status==='ready'&&!j.reviewed||j.status==='failed');
+ const collapsed=queueCollapsed??(!running&&!waiting&&!needsEye);
  const head=document.createElement('div');head.style.cssText='display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #344055';
  const title=document.createElement('strong');title.id='queueSummary';title.style.flex='1';
  title.textContent='Générations : '+finished+'/'+visible.length+(running?' · '+running+' en cours':'')+(waiting?' · '+waiting+' en attente':'');
- const fold=document.createElement('button');fold.type='button';fold.className='btn';fold.textContent=queueCollapsed?'Afficher':'Réduire';fold.onclick=()=>{queueCollapsed=!queueCollapsed;renderQueue()};
+ const fold=document.createElement('button');fold.type='button';fold.className='btn';fold.textContent=collapsed?'Afficher':'Réduire';fold.onclick=()=>{queueCollapsed=!collapsed;renderQueue()};
  const clear=document.createElement('button');clear.type='button';clear.className='btn';clear.textContent='Effacer les terminées';
  clear.onclick=()=>{for(const job of generationQueue)if(['done','cancelled'].includes(job.status)&&(!job.group||generationQueue.filter(j=>j.group===job.group).every(j=>['done','cancelled'].includes(j.status))))job.hidden=true;renderQueue()};
- head.append(title,clear,fold);
- const list=document.createElement('div');list.id='queueList';list.style.cssText='overflow:auto;padding:6px 10px;display:'+(queueCollapsed?'none':'flex')+';flex-direction:column;gap:6px';
+ if(collapsed)head.append(title,fold);else head.append(title,clear,fold);
+ const list=document.createElement('div');list.id='queueList';list.style.cssText='overflow:auto;padding:6px 10px;display:'+(collapsed?'none':'flex')+';flex-direction:column;gap:6px';
  const groups=new Set();
  for(const job of visible){
   const line=document.createElement('div');line.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap';
