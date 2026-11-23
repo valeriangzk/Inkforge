@@ -38,7 +38,7 @@ async function generatePanel(p){const job=await settle(p,p.locator('#generate'))
   let p=await browser.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>console.error('JS:',e.message));
   await p.goto(address);await p.waitForFunction(()=>typeof workspaceReady!=='undefined'&&workspaceReady);
   const nav=await p.locator('.nav [data-tab]').evaluateAll(b=>b.map(x=>x.dataset.tab));
-  assert.equal(nav[0],'style','L’onglet Style est en premier');
+  assert.deepEqual(nav.slice(0,2),['projects','style'],'« Projets » juste au-dessus de « Style »');
   assert.ok(nav.indexOf('style')<nav.indexOf('characters')&&nav.indexOf('style')<nav.indexOf('places'));
   await p.evaluate(()=>change(()=>{project.title='Projet style'}));
 
