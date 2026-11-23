@@ -883,7 +883,7 @@ function batchJob(batch,angle,after=null){
  const attempt={projectId:batch.projectId,itemId:batch.characterId,angle,mode:batch.place?batch.lighting:'',status:'En attente'};
  viewAttempts.push(attempt);if(viewAttempts.length>64)viewAttempts.shift();
  Object.assign(card,{status:'waiting',error:'',validated:false,image:'',attempt});
- const job=enqueue({label:labels[angle].label,group:batch.group,local:batch.local,after:after?[after]:null,
+ const job=enqueue({label:labels[angle].label,group:batch.group,local:batch.local,after:after?[after]:null,needsReview:true,
   afterError:'La vue « '+labels[batch.first].label+' » a échoué. Refais-la d’abord.',
   run:async key=>{card.status='running';attempt.status='En cours';renderBatch();const {image}=await buildView(batch.draft,angle,batch.place,key,attempt,new Image());return image},
   onSuccess:image=>{card.image=image;card.status='done';attempt.preview=mediaFingerprint(image);attempt.status='Aperçu';batchDraftView(batch,angle,image);batchSettled(batch)},
