@@ -71,7 +71,7 @@ async function preview(p,button){
   await p.locator('#memorySave').click();
   await p.locator('#placeGrid').getByRole('button',{name:'Revenir aux vues IA'}).click();
   await preview(p,p.locator('#placeGrid').getByRole('button',{name:'Générer · Vue principale',exact:true}));
-  assert.ok(lastPrompt().startsWith('Vue ')&&lastPrompt().includes('Style graphique imposé (« Shōnen »)'));
+  assert.ok(lastPrompt().startsWith('Style graphique imposé (« Shōnen »)')&&lastPrompt().split('\n\n')[1].startsWith('Vue '));
   await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>project.places[0].placeViews?.day?.main);
 
   // 3. Changement de style sur un projet déjà dessiné : on demande quoi faire.

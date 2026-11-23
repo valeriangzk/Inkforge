@@ -70,7 +70,8 @@ class Provider(BaseHTTPRequestHandler):
         req=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         assert req['n']==1
         assert req['model']=='agnes-image-2.5-flash' and req['size']=='1K'
-        assert (req['ratio']=='16:9' if req['prompt'].startswith('Panorama équirectangulaire') else req['ratio'] in ('1:1','3:4','4:3')) and 'response_format' not in req
+        core=req['prompt'].split('\n\n',1)[1] if req['prompt'].startswith('Style graphique imposé') else req['prompt']
+        assert (req['ratio']=='16:9' if core.startswith('Panorama équirectangulaire') else req['ratio'] in ('1:1','3:4','4:3')) and 'response_format' not in req
         extra=req.get('extra_body',{})
         images=extra.get('image',[])
         assert (images and extra['response_format']=='b64_json') or req.get('return_base64') is True
@@ -78,10 +79,10 @@ class Provider(BaseHTTPRequestHandler):
         for image in images:
             assert image.startswith('data:image/jpeg;base64,')
             assert base64.b64decode(image.split(',',1)[1],validate=True).startswith(b'\xff\xd8\xff')
-        prompt=req['prompt']
+        prompt=core  # le style passe en premier : on lit la consigne qui suit
         # Les générations simultanées écrivent une ligne chacune : sous Windows, deux ajouts concurrents peuvent s'écraser.
         with METRICS_LOCK, (folder/'metrics.jsonl').open('a',encoding='utf-8') as output:
-            print(json.dumps({'refs':len(images),'prompt':prompt,'size':len(json.dumps(req)),'key':key,'start':started,'end':time.time()}),file=output)
+            print(json.dumps({'refs':len(images),'prompt':req['prompt'],'size':len(json.dumps(req)),'key':key,'start':started,'end':time.time()}),file=output)
         if prompt.startswith('quota-fournisseur'):
             return self.reply({},429)
         if prompt.startswith('image-incomplete'):
