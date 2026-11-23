@@ -101,6 +101,28 @@ async function runBatch(p,grid,labels){
   await p.evaluate(()=>flushWorkspace());
   assert.deepEqual(await p.evaluate(()=>project.places[0].placeViews),{day:{main:places[0],left:places[2]}});
   console.log('PASS quatre vues du décor en parallèle');
+
+  // Case avec deux personnages, la vue gauche du décor et un plan serré.
+  await dialog.getByRole('button',{name:'Fermer',exact:true}).click();
+  await p.locator('[data-tab=characters]').click();await p.locator('#addChar').click();
+  await p.locator('#memoryName').fill('Second sujet');await p.locator('#memoryAppearance').fill('lunettes rondes, pull vert');
+  await p.locator('#memorySave').click();await p.evaluate(()=>flushWorkspace());
+  await p.locator('[data-tab=ai]').click();await p.locator('#listAgnesModels').click();
+  await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
+  for(const name of ['Sujet parallèle','Second sujet'])await p.locator('#aiCharacters').getByLabel(name).check();
+  await p.locator('#aiPlace').selectOption({label:'Lieu parallèle'});
+  await p.locator('#aiPlaceAngle').selectOption('left');await p.locator('#aiShot').selectOption('close');await p.locator('#aiShotArea').selectOption('right');
+  await p.locator('#aiPrompt').fill('Deux amis discutent');await p.locator('#generate').click();
+  await p.waitForFunction(()=>!aiBusy,null,{timeout:60000});
+  assert.ok(await p.locator('#aiDialogImage').evaluate(el=>el.naturalWidth>0),await p.locator('#aiDialogStep').textContent());
+  const call=calls().pop();
+  assert.ok(call.prompt.startsWith('Deux amis discutent'));
+  assert.ok(call.prompt.includes('Décor : Nom: Lieu parallèle')&&call.prompt.includes('(image 1)'));
+  assert.ok(call.prompt.includes('Personnage : Nom: Sujet parallèle')&&call.prompt.includes('(images 2, 3)'));
+  assert.ok(call.prompt.includes('Personnage : Nom: Second sujet'));
+  assert.ok(call.prompt.includes('vue gauche, plan serré'));
+  assert.equal(call.refs,3);
+  console.log('PASS case avec deux personnages, partie du décor et cadrage');
   assert.ok(!fs.readFileSync(path.join(folder,'_inkforge_travail','state.json'),'utf8').includes('test-secret-'));
  }catch(error){console.error(error);process.exitCode=1}
  finally{if(browser)await browser.close();if(server){const done=once(server,'exit');server.kill();await done}}

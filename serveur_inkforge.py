@@ -244,6 +244,45 @@ def decode_image_value(value):
     return 'data:image/' + kind + ';base64,' + base64.b64encode(data).decode('ascii')
 
 
+PANEL_SHOTS={'wide':'plan large : on voit l’ensemble du décor','medium':'plan moyen : on se rapproche d’une partie du décor','close':'plan serré : on voit seulement une petite partie du décor'}
+PANEL_ANGLES={'main':'vue principale','opposite':'vue opposée','left':'vue gauche','right':'vue droite'}
+
+def compose_panel(payload):
+    """Case de BD : jusqu’à 4 personnages et un décor, 5 images de référence au total, chacune annoncée dans le texte."""
+    characters=payload.get('characters')
+    if not isinstance(characters,list) or len(characters)>4:
+        raise ClientFailure('Choisis au maximum 4 personnages pour une case.')
+    entities=[('Décor',payload.get('place'))]+[('Personnage',c) for c in characters]
+    described=[(kind,)+describe_reference(entity,kind) for kind,entity in entities if isinstance(entity,dict)]
+    # Le décor garde une image ; les places restantes sont partagées entre les personnages.
+    budget=[min(len(images),1 if kind=='Décor' else 5) for kind,_,images in described]
+    while sum(budget)>5:
+        index=max(range(len(budget)),key=lambda i:(budget[i] if described[i][0]=='Personnage' else 0))
+        if budget[index]<=1: raise ClientFailure('Trop d’images de référence pour cette case.')
+        budget[index]-=1
+    descriptions,refs=[],[]
+    for (kind,text,images),count in zip(described,budget):
+        numbers=list(range(len(refs)+1,len(refs)+count+1))
+        refs.extend(images[:count])
+        if numbers: text+=' (image'+('s ' if len(numbers)>1 else ' ')+', '.join(map(str,numbers))+')'
+        if text: descriptions.append(text)
+    return descriptions,refs
+
+def composition_rules(payload):
+    view=payload.get('placeView') if isinstance(payload.get('placeView'),dict) else {}
+    lines=['Consignes de composition :',
+           '- Crée une seule illustration cohérente qui représente la scène décrite.',
+           '- Les images fournies servent uniquement de références : ne recopie aucune d’elles telle quelle.']
+    if payload.get('characters'):
+        lines+=['- Pour chaque personnage, reprends son apparence (visage, coiffure, tenue, couleurs) mais pas la pose, le cadrage ni le fond de sa fiche : sa pose et son action suivent la scène décrite.',
+                '- Intègre les personnages dans le décor : même perspective, même éclairage, même échelle, ombres et points de contact cohérents. Pas d’effet de collage ni de contour détouré.']
+    if isinstance(payload.get('place'),dict):
+        shot=PANEL_SHOTS.get(view.get('shot'),PANEL_SHOTS['wide'])
+        angle=PANEL_ANGLES.get(view.get('angle'),PANEL_ANGLES['main'])
+        lines.append('- Décor : '+angle+', '+shot+'. Les personnages gardent une taille réaliste par rapport au décor.')
+    return '\n'.join(lines)
+
+
 def send_generate(payload,key):
     model=payload.get('model'); prompt=payload.get('prompt')
     if not isinstance(model,str) or not re.fullmatch(r'[A-Za-z0-9._:-]{3,120}',model) or 'image' not in model.lower():
@@ -255,14 +294,18 @@ def send_generate(payload,key):
     if model not in {m['id'] for m in available}:
         raise ClientFailure('Le modèle image choisi n’apparaît pas dans les modèles accessibles avec ta clé.')
     descriptions,refs=[],[]
-    for k,kind in [('character','Personnage'),('place','Décor')]:
-        text,images=describe_reference(payload.get(k),kind)
-        if text:descriptions.append(text)
-        if images and k=='place':
-            refs=refs[:max(1,5-min(2,len(images)))]
-        refs.extend(images)
+    if 'characters' in payload:
+        descriptions,refs=compose_panel(payload)
+    else:
+        for k,kind in [('character','Personnage'),('place','Décor')]:
+            text,images=describe_reference(payload.get(k),kind)
+            if text:descriptions.append(text)
+            if images and k=='place':
+                refs=refs[:max(1,5-min(2,len(images)))]
+            refs.extend(images)
     full_prompt=prompt.strip()
     if descriptions: full_prompt+='\n\nRéférences de continuité à respecter :\n'+'\n'.join(descriptions)
+    if 'characters' in payload: full_prompt+='\n\n'+composition_rules(payload)
     frame=payload.get('frame') if isinstance(payload.get('frame'),dict) else {}
     try: ratio=float(frame.get('w',1))/max(0.1,float(frame.get('h',1)))
     except (ValueError,TypeError,ZeroDivisionError):ratio=1.0

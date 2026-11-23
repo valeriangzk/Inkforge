@@ -107,9 +107,12 @@ async function generate(p,prompt,accept=true){
   await p.waitForFunction(()=>document.querySelector('#agnesModel').value);
   await generate(p,'Scène avec une description seule');
   const original=await p.evaluate(()=>current().img);
-  await p.locator('#aiCharacter').selectOption({label:'Sujet de vérification'});
+  await p.locator('#aiCharacters').getByLabel('Sujet de vérification').check();
   await p.locator('#aiPlace').selectOption({label:'Lieu de vérification'});
   await generate(p,'Scène avec personnage et décor',false);
+  {const call=JSON.parse(fs.readFileSync(path.join(folder,'metrics.jsonl'),'utf8').trim().split('\n').pop());
+   assert.ok(call.prompt.includes('Consignes de composition')&&call.prompt.includes('ne recopie aucune')&&call.prompt.includes('plan moyen'));
+   assert.ok(call.prompt.includes('Personnage : Nom: Sujet de vérification')&&call.refs>=2&&call.refs<=5);}
   await p.route('**/work/save',r=>r.fulfill({status:507,contentType:'application/json',body:JSON.stringify({error:'Disque plein pendant le test.'})}),{times:1});
   await p.locator('#aiAcceptImage').click();await p.waitForFunction(()=>document.querySelector('#aiDialogTitle').textContent==='Image non enregistrée');
   assert.equal(await p.evaluate(()=>current().img),original);
