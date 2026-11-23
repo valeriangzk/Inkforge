@@ -118,6 +118,7 @@ async function runBatch(p,grid,labels){
    const image=await p.locator('#aiDialogImage').getAttribute('src');
    return {image,prompt:made[0]?.prompt,refs:made[0]?.refs};
   }
+  await dialog.getByRole('button',{name:'Fermer',exact:true}).click();await dialog.waitFor({state:'hidden'});
   const close=()=>p.locator('#aiCloseDialog').click();
   await p.locator('[data-tab=characters]').click();
   const back=await p.evaluate(()=>project.characters[0].views.back);
